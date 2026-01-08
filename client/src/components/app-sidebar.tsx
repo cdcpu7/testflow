@@ -1,4 +1,4 @@
-import { FolderKanban, Plus, ListChecks, Folder, ChevronRight } from "lucide-react";
+import { Plus, ListChecks, Folder } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -49,28 +49,6 @@ export function AppSidebar({ onNewProject }: AppSidebarProps) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-4 py-2">
-            메뉴
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/"}
-                  data-testid="nav-projects"
-                >
-                  <Link href="/">
-                    <FolderKanban className="w-4 h-4" />
-                    <span>전체 프로젝트</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         <SidebarGroup className="flex-1 overflow-hidden">
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-4 py-2 flex items-center justify-between gap-2">
             <span>프로젝트 목록</span>
