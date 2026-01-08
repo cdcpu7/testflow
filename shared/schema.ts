@@ -1,7 +1,25 @@
+import { pgTable, text, varchar, boolean, timestamp } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Export auth models (required for Replit Auth)
-export * from "./models/auth";
+// Users table for authentication
+export const users = pgTable("users", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+}).extend({
+  username: z.string().min(3, "사용자명은 3자 이상이어야 합니다"),
+  password: z.string().min(4, "비밀번호는 4자 이상이어야 합니다"),
+});
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
 
 // Project schema
 export const projectSchema = z.object({
