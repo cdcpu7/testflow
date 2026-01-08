@@ -38,6 +38,10 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [specViewerOpen, setSpecViewerOpen] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState("");
+  const [isEditingScheduleDesc, setIsEditingScheduleDesc] = useState(false);
+  const [editedScheduleDesc, setEditedScheduleDesc] = useState("");
+  const [isEditingProductSpecDesc, setIsEditingProductSpecDesc] = useState(false);
+  const [editedProductSpecDesc, setEditedProductSpecDesc] = useState("");
   const { toast } = useToast();
 
   const { data: project, isLoading: projectLoading } = useQuery<Project>({
@@ -136,7 +140,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   });
 
   const updateProject = useMutation({
-    mutationFn: async (updates: { description?: string }) => {
+    mutationFn: async (updates: { description?: string; scheduleDescription?: string; productSpecDescription?: string }) => {
       const res = await apiRequest("PATCH", `/api/projects/${projectId}`, updates);
       return res.json();
     },
@@ -144,7 +148,9 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       setIsEditingDescription(false);
-      toast({ title: "설명이 수정되었습니다." });
+      setIsEditingScheduleDesc(false);
+      setIsEditingProductSpecDesc(false);
+      toast({ title: "수정되었습니다." });
     },
     onError: (error: Error) => {
       toast({ title: "오류", description: error.message, variant: "destructive" });
@@ -163,6 +169,34 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const handleCancelEditDescription = () => {
     setIsEditingDescription(false);
     setEditedDescription("");
+  };
+
+  const handleStartEditScheduleDesc = () => {
+    setEditedScheduleDesc(project?.scheduleDescription || "");
+    setIsEditingScheduleDesc(true);
+  };
+
+  const handleSaveScheduleDesc = () => {
+    updateProject.mutate({ scheduleDescription: editedScheduleDesc });
+  };
+
+  const handleCancelScheduleDesc = () => {
+    setIsEditingScheduleDesc(false);
+    setEditedScheduleDesc("");
+  };
+
+  const handleStartEditProductSpecDesc = () => {
+    setEditedProductSpecDesc(project?.productSpecDescription || "");
+    setIsEditingProductSpecDesc(true);
+  };
+
+  const handleSaveProductSpecDesc = () => {
+    updateProject.mutate({ productSpecDescription: editedProductSpecDesc });
+  };
+
+  const handleCancelProductSpecDesc = () => {
+    setIsEditingProductSpecDesc(false);
+    setEditedProductSpecDesc("");
   };
 
   if (projectLoading || itemsLoading) {
@@ -341,50 +375,10 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <ImageIcon className="w-4 h-4" />
-                  제품 이미지
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleImageUpload("product")}
-                  data-testid="button-upload-product-image"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-              {project.productImage ? (
-                <div
-                  className="relative aspect-video rounded-md overflow-hidden cursor-pointer group"
-                  onClick={() => setSelectedImage(project.productImage!)}
-                  data-testid="image-product"
-                >
-                  <img
-                    src={project.productImage}
-                    alt="제품 이미지"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate"
-                  onClick={() => handleImageUpload("product")}
-                >
-                  <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" />
-                  일정표
+                  1. 일정
                 </span>
                 <Button
                   size="sm"
@@ -395,6 +389,52 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   <Upload className="w-3.5 h-3.5" />
                 </Button>
               </div>
+              <div className="flex items-center gap-2">
+                {isEditingScheduleDesc ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input
+                      value={editedScheduleDesc}
+                      onChange={(e) => setEditedScheduleDesc(e.target.value)}
+                      placeholder="일정 설명 입력"
+                      className="flex-1 text-sm"
+                      data-testid="input-schedule-description"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveScheduleDesc();
+                        if (e.key === "Escape") handleCancelScheduleDesc();
+                      }}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleSaveScheduleDesc}
+                      disabled={updateProject.isPending}
+                      data-testid="button-save-schedule-desc"
+                    >
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleCancelScheduleDesc}
+                      data-testid="button-cancel-schedule-desc"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    className="flex items-center gap-2 cursor-pointer group flex-1"
+                    onClick={handleStartEditScheduleDesc}
+                    data-testid="button-edit-schedule-desc"
+                  >
+                    <p className="text-sm text-muted-foreground truncate">
+                      {project.scheduleDescription || "설명 추가..."}
+                    </p>
+                    <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                  </div>
+                )}
+              </div>
               {project.scheduleImage ? (
                 <div
                   className="relative aspect-video rounded-md overflow-hidden cursor-pointer group"
@@ -403,7 +443,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                 >
                   <img
                     src={project.scheduleImage}
-                    alt="일정표"
+                    alt="일정"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -420,11 +460,97 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
               )}
             </div>
 
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4" />
+                  2. 제품사양
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleImageUpload("product")}
+                  data-testid="button-upload-product-image"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {isEditingProductSpecDesc ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input
+                      value={editedProductSpecDesc}
+                      onChange={(e) => setEditedProductSpecDesc(e.target.value)}
+                      placeholder="제품사양 설명 입력"
+                      className="flex-1 text-sm"
+                      data-testid="input-product-spec-description"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveProductSpecDesc();
+                        if (e.key === "Escape") handleCancelProductSpecDesc();
+                      }}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleSaveProductSpecDesc}
+                      disabled={updateProject.isPending}
+                      data-testid="button-save-product-spec-desc"
+                    >
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleCancelProductSpecDesc}
+                      data-testid="button-cancel-product-spec-desc"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    className="flex items-center gap-2 cursor-pointer group flex-1"
+                    onClick={handleStartEditProductSpecDesc}
+                    data-testid="button-edit-product-spec-desc"
+                  >
+                    <p className="text-sm text-muted-foreground truncate">
+                      {project.productSpecDescription || "설명 추가..."}
+                    </p>
+                    <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                  </div>
+                )}
+              </div>
+              {project.productImage ? (
+                <div
+                  className="relative aspect-video rounded-md overflow-hidden cursor-pointer group"
+                  onClick={() => setSelectedImage(project.productImage!)}
+                  data-testid="image-product"
+                >
+                  <img
+                    src={project.productImage}
+                    alt="제품사양"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Maximize2 className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate"
+                  onClick={() => handleImageUpload("product")}
+                >
+                  <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
+                </div>
+              )}
+            </div>
+
             {project.productSpec && (
               <div className="space-y-2">
                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <FileText className="w-4 h-4" />
-                  제품 사양
+                  제품 사양 텍스트
                 </span>
                 <div
                   className="p-3 rounded-md bg-muted/50 cursor-pointer hover-elevate"
