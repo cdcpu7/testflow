@@ -125,6 +125,8 @@ export class MemStorage implements IStorage {
     const item: TestItem = {
       ...itemData,
       id,
+      sampleReceived: itemData.sampleReceived ?? false,
+      testInProgress: itemData.testInProgress ?? false,
       testCompleted: itemData.testCompleted ?? false,
       reportCompleted: itemData.reportCompleted ?? false,
       photos: itemData.photos ?? [],

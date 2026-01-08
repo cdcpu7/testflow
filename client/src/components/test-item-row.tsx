@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Calendar, CheckCircle2, FileText, Upload, Trash2, Edit2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Calendar, CheckCircle2, FileText, Upload, Trash2, Edit2, Package, FlaskConical, ClipboardCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,12 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
     }
     if (item.testCompleted) {
       return <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">시험완료</Badge>;
+    }
+    if (item.testInProgress) {
+      return <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30">진행중</Badge>;
+    }
+    if (item.sampleReceived) {
+      return <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30">샘플접수</Badge>;
     }
     return <Badge variant="outline" className="bg-muted text-muted-foreground">대기중</Badge>;
   };
@@ -116,24 +122,74 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
               <div className="space-y-3">
                 <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
-                  상태
+                  진행 상태
                 </h5>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                    <Label className="text-sm">시험 완료</Label>
-                    <Switch
-                      checked={item.testCompleted}
-                      onCheckedChange={(checked) => onUpdate({ testCompleted: checked })}
-                      data-testid={`switch-test-${item.id}`}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
+                    <Checkbox
+                      checked={item.sampleReceived}
+                      onCheckedChange={(checked) => onUpdate({ sampleReceived: checked === true })}
+                      data-testid={`checkbox-sample-${item.id}`}
                     />
+                    <div className="flex items-center gap-2 flex-1">
+                      <Label className="text-sm flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5" />
+                        1. 샘플 접수
+                      </Label>
+                      <Input
+                        placeholder="샘플번호"
+                        value={item.sampleNumber || ""}
+                        onChange={(e) => onUpdate({ sampleNumber: e.target.value })}
+                        className="flex-1 h-8 text-sm"
+                        data-testid={`input-sample-number-${item.id}`}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                    <Label className="text-sm">보고서 완료</Label>
-                    <Switch
-                      checked={item.reportCompleted}
-                      onCheckedChange={(checked) => onUpdate({ reportCompleted: checked })}
-                      data-testid={`switch-report-${item.id}`}
+
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
+                    <Checkbox
+                      checked={item.testInProgress}
+                      onCheckedChange={(checked) => onUpdate({ testInProgress: checked === true })}
+                      data-testid={`checkbox-test-progress-${item.id}`}
                     />
+                    <Label className="text-sm flex items-center gap-1.5">
+                      <FlaskConical className="w-3.5 h-3.5" />
+                      2. 시험 진행
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
+                    <Checkbox
+                      checked={item.testCompleted}
+                      onCheckedChange={(checked) => onUpdate({ testCompleted: checked === true })}
+                      data-testid={`checkbox-test-complete-${item.id}`}
+                    />
+                    <div className="flex items-center gap-2 flex-1">
+                      <Label className="text-sm flex items-center gap-1.5 whitespace-nowrap">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        3. 시험 완료
+                      </Label>
+                      <Input
+                        type="text"
+                        placeholder="시험결과 (숫자)"
+                        value={item.testResult || ""}
+                        onChange={(e) => onUpdate({ testResult: e.target.value })}
+                        className="flex-1 h-8 text-sm"
+                        data-testid={`input-test-result-${item.id}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
+                    <Checkbox
+                      checked={item.reportCompleted}
+                      onCheckedChange={(checked) => onUpdate({ reportCompleted: checked === true })}
+                      data-testid={`checkbox-report-${item.id}`}
+                    />
+                    <Label className="text-sm flex items-center gap-1.5">
+                      <ClipboardCheck className="w-3.5 h-3.5" />
+                      5. 보고서 작성
+                    </Label>
                   </div>
                 </div>
               </div>
@@ -174,7 +230,7 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
               <div className="space-y-3">
                 <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
                   <Upload className="w-4 h-4" />
-                  사진 및 파일
+                  4. 시험 사진
                 </h5>
                 <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
                   <input
