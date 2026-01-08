@@ -1,16 +1,204 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { insertProjectSchema, insertTestItemSchema } from "@shared/schema";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Configure multer for file uploads
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const multerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage: multerStorage });
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Serve uploaded files
+  app.use("/uploads", (req, res, next) => {
+    const filePath = path.join(uploadDir, req.path);
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send("File not found");
+    }
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  // Projects API
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const projects = await storage.getAllProjects();
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const parsed = insertProjectSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.message });
+      }
+      const project = await storage.createProject(parsed.data);
+      res.status(201).json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create project" });
+    }
+  });
+
+  app.patch("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.updateProject(req.params.id, req.body);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteProject(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
+  // Project images upload
+  app.post("/api/projects/:id/images", upload.single("file"), async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const imageUrl = `/uploads/${req.file.filename}`;
+      const type = req.body.type as "product" | "schedule";
+
+      const updates = type === "product"
+        ? { productImage: imageUrl }
+        : { scheduleImage: imageUrl };
+
+      const updated = await storage.updateProject(req.params.id, updates);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
+
+  // Test Items API
+  app.get("/api/test-items", async (req, res) => {
+    try {
+      const items = await storage.getAllTestItems();
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test items" });
+    }
+  });
+
+  app.get("/api/projects/:projectId/test-items", async (req, res) => {
+    try {
+      const items = await storage.getTestItemsByProject(req.params.projectId);
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test items" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/test-items", async (req, res) => {
+    try {
+      const data = { ...req.body, projectId: req.params.projectId };
+      const parsed = insertTestItemSchema.safeParse(data);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.message });
+      }
+      const item = await storage.createTestItem(parsed.data);
+      res.status(201).json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create test item" });
+    }
+  });
+
+  app.patch("/api/test-items/:id", async (req, res) => {
+    try {
+      const item = await storage.updateTestItem(req.params.id, req.body);
+      if (!item) {
+        return res.status(404).json({ error: "Test item not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update test item" });
+    }
+  });
+
+  app.delete("/api/test-items/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteTestItem(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Test item not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete test item" });
+    }
+  });
+
+  // Test Item photos upload
+  app.post("/api/test-items/:id/photos", upload.single("file"), async (req, res) => {
+    try {
+      const item = await storage.getTestItem(req.params.id);
+      if (!item) {
+        return res.status(404).json({ error: "Test item not found" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const photoUrl = `/uploads/${req.file.filename}`;
+      const photos = [...(item.photos || []), photoUrl];
+
+      const updated = await storage.updateTestItem(req.params.id, { photos });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload photo" });
+    }
+  });
 
   return httpServer;
 }
