@@ -10,12 +10,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, TestItem, InsertProject } from "@shared/schema";
 
-interface ProjectsListProps {
-  showNewProjectForm: boolean;
-  onCloseNewProjectForm: () => void;
-}
-
-export function ProjectsList({ showNewProjectForm, onCloseNewProjectForm }: ProjectsListProps) {
+export function ProjectsList() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -27,21 +22,6 @@ export function ProjectsList({ showNewProjectForm, onCloseNewProjectForm }: Proj
 
   const { data: testItems = [] } = useQuery<TestItem[]>({
     queryKey: ["/api/test-items"],
-  });
-
-  const createProject = useMutation({
-    mutationFn: async (data: InsertProject) => {
-      const res = await apiRequest("POST", "/api/projects", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      onCloseNewProjectForm();
-      toast({ title: "프로젝트가 생성되었습니다." });
-    },
-    onError: (error: Error) => {
-      toast({ title: "오류", description: error.message, variant: "destructive" });
-    },
   });
 
   const updateProject = useMutation({
@@ -137,13 +117,6 @@ export function ProjectsList({ showNewProjectForm, onCloseNewProjectForm }: Proj
           ))}
         </div>
       )}
-
-      <ProjectForm
-        open={showNewProjectForm}
-        onClose={onCloseNewProjectForm}
-        onSubmit={(data) => createProject.mutate(data)}
-        isPending={createProject.isPending}
-      />
 
       {editingProject && (
         <ProjectForm
