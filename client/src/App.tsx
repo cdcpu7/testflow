@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, getQueryFn } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -57,12 +57,14 @@ function MainLayout() {
 function AppContent() {
   const [location] = useLocation();
   
-  const { data: user, isLoading, error } = useQuery<AuthUser>({
+  const { data: user, isLoading } = useQuery<AuthUser | null>({
     queryKey: ["/api/auth/me"],
+    queryFn: getQueryFn<AuthUser | null>({ on401: "returnNull" }),
     retry: false,
+    staleTime: Infinity,
   });
 
-  const isAuthenticated = !!user && !error;
+  const isAuthenticated = !!user;
 
   if (isLoading) {
     return (
