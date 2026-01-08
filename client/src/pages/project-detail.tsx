@@ -9,12 +9,16 @@ import {
   Image as ImageIcon,
   Maximize2,
   Upload,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { TestItemRow } from "@/components/test-item-row";
 import { TestItemForm } from "@/components/test-item-form";
 import { ImageModal } from "@/components/image-modal";
@@ -32,6 +36,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [showTestItemForm, setShowTestItemForm] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [specViewerOpen, setSpecViewerOpen] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState("");
   const { toast } = useToast();
 
   const { data: project, isLoading: projectLoading } = useQuery<Project>({
@@ -129,6 +135,36 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     },
   });
 
+  const updateProject = useMutation({
+    mutationFn: async (updates: { description?: string }) => {
+      const res = await apiRequest("PATCH", `/api/projects/${projectId}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setIsEditingDescription(false);
+      toast({ title: "설명이 수정되었습니다." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "오류", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleStartEditDescription = () => {
+    setEditedDescription(project?.description || "");
+    setIsEditingDescription(true);
+  };
+
+  const handleSaveDescription = () => {
+    updateProject.mutate({ description: editedDescription });
+  };
+
+  const handleCancelEditDescription = () => {
+    setIsEditingDescription(false);
+    setEditedDescription("");
+  };
+
   if (projectLoading || itemsLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -195,16 +231,59 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold">{project.name}</h1>
               <Badge variant="outline" className={getStatusColor(project.status)}>
                 {project.status}
               </Badge>
             </div>
-            {project.description && (
-              <p className="text-muted-foreground mt-1">{project.description}</p>
-            )}
+            <div className="flex items-center gap-2 mt-1">
+              {isEditingDescription ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    placeholder="프로젝트 설명을 입력하세요"
+                    className="flex-1"
+                    data-testid="input-edit-description"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveDescription();
+                      if (e.key === "Escape") handleCancelEditDescription();
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleSaveDescription}
+                    disabled={updateProject.isPending}
+                    data-testid="button-save-description"
+                  >
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleCancelEditDescription}
+                    data-testid="button-cancel-description"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center gap-2 cursor-pointer group"
+                  onClick={handleStartEditDescription}
+                  data-testid="button-edit-description"
+                >
+                  <p className="text-muted-foreground">
+                    {project.description || "설명 추가..."}
+                  </p>
+                  <Pencil className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <Button onClick={() => setShowTestItemForm(true)} data-testid="button-add-test-item">
