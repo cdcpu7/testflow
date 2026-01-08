@@ -7,6 +7,7 @@ import {
   type InsertTestItem,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -38,6 +39,18 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.projects = new Map();
     this.testItems = new Map();
+    this.initDefaultUser();
+  }
+
+  private async initDefaultUser() {
+    const hashedPassword = await bcrypt.hash("1234", 10);
+    const defaultUser: User = {
+      id: randomUUID(),
+      username: "노세영",
+      password: hashedPassword,
+      createdAt: new Date(),
+    };
+    this.users.set(defaultUser.id, defaultUser);
   }
 
   async getUser(id: string): Promise<User | undefined> {
