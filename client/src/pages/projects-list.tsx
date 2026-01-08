@@ -130,7 +130,7 @@ export function ProjectsList({ showNewProjectForm, onCloseNewProjectForm }: Proj
               key={project.id}
               project={project}
               testItems={getProjectTestItems(project.id)}
-              onClick={() => setLocation(`/project/${project.id}`)}
+              onClick={() => setLocation(`/projects/${project.id}`)}
               onEdit={() => setEditingProject(project)}
               onDelete={() => deleteProject.mutate(project.id)}
             />

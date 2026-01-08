@@ -22,7 +22,7 @@ function Router({ showNewProjectForm, onCloseNewProjectForm }: {
           onCloseNewProjectForm={onCloseNewProjectForm}
         />
       </Route>
-      <Route path="/project/:id">
+      <Route path="/projects/:id">
         {(params) => <ProjectDetail projectId={params.id} />}
       </Route>
       <Route component={NotFound} />
