@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProjectSchema, type InsertProject, type Project } from "@shared/schema";
@@ -49,9 +50,23 @@ export function ProjectForm({ open, onClose, onSubmit, project, isPending }: Pro
     },
   });
 
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: project?.name || "",
+        description: project?.description || "",
+        productSpec: project?.productSpec || "",
+        scheduleImage: project?.scheduleImage || "",
+        productImage: project?.productImage || "",
+        startDate: project?.startDate || "",
+        endDate: project?.endDate || "",
+        status: project?.status || "진행중",
+      });
+    }
+  }, [open, project, form]);
+
   const handleSubmit = (data: InsertProject) => {
     onSubmit(data);
-    form.reset();
   };
 
   return (
