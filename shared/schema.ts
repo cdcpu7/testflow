@@ -52,7 +52,7 @@ export const testItemSchema = z.object({
   actualEndDate: z.string().optional(),
   sampleReceived: z.boolean().default(false),
   sampleNumber: z.string().optional(),
-  testInProgress: z.boolean().default(false),
+  testProgressStatus: z.enum(["예정", "진행중", "완료"]).default("예정"),
   testCompleted: z.boolean().default(false),
   testResult: z.string().optional(),
   reportCompleted: z.boolean().default(false),

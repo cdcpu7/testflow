@@ -126,7 +126,7 @@ export class MemStorage implements IStorage {
       ...itemData,
       id,
       sampleReceived: itemData.sampleReceived ?? false,
-      testInProgress: itemData.testInProgress ?? false,
+      testProgressStatus: itemData.testProgressStatus ?? "예정",
       testCompleted: itemData.testCompleted ?? false,
       reportCompleted: itemData.reportCompleted ?? false,
       photos: itemData.photos ?? [],

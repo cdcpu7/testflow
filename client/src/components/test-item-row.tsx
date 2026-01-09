@@ -93,13 +93,16 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
     if (item.testCompleted) {
       return <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">시험완료</Badge>;
     }
-    if (item.testInProgress) {
+    if (item.testProgressStatus === "완료") {
+      return <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">시험완료</Badge>;
+    }
+    if (item.testProgressStatus === "진행중") {
       return <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30">진행중</Badge>;
     }
     if (item.sampleReceived) {
       return <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30">샘플접수</Badge>;
     }
-    return <Badge variant="outline" className="bg-muted text-muted-foreground">대기중</Badge>;
+    return <Badge variant="outline" className="bg-muted text-muted-foreground">예정</Badge>;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,15 +233,25 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
                   </div>
 
                   <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
-                    <Checkbox
-                      checked={item.testInProgress}
-                      onCheckedChange={(checked) => onUpdate({ testInProgress: checked === true })}
-                      data-testid={`checkbox-test-progress-${item.id}`}
-                    />
-                    <Label className="text-sm flex items-center gap-1.5">
-                      <FlaskConical className="w-3.5 h-3.5" />
-                      2. 시험 진행
-                    </Label>
+                    <div className="flex items-center gap-2 flex-1">
+                      <Label className="text-sm flex items-center gap-1.5 whitespace-nowrap">
+                        <FlaskConical className="w-3.5 h-3.5" />
+                        2. 시험 진행
+                      </Label>
+                      <Select
+                        value={item.testProgressStatus || "예정"}
+                        onValueChange={(value) => onUpdate({ testProgressStatus: value as "예정" | "진행중" | "완료" })}
+                      >
+                        <SelectTrigger className="flex-1 h-8" data-testid={`select-test-progress-${item.id}`}>
+                          <SelectValue placeholder="상태 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="예정">예정</SelectItem>
+                          <SelectItem value="진행중">진행중</SelectItem>
+                          <SelectItem value="완료">완료</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
@@ -262,7 +275,7 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
                         <SelectContent>
                           <SelectItem value="OK">OK</SelectItem>
                           <SelectItem value="NG">NG</SelectItem>
-                          <SelectItem value="보류중">보류중</SelectItem>
+                          <SelectItem value="TBD">TBD</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
