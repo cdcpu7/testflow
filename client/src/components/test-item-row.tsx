@@ -59,18 +59,32 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
 
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
-          {item.description && (
-            <p className="text-sm text-muted-foreground truncate">{item.description}</p>
-          )}
         </div>
 
-        <div className="flex items-center gap-4 shrink-0">
-          {item.plannedStartDate && (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{item.plannedStartDate}</span>
-              {item.plannedEndDate && <span>~ {item.plannedEndDate}</span>}
-            </div>
+        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
+          {item.sampleNumber && (
+            <span className="flex items-center gap-1">
+              <Package className="w-3 h-3" />
+              {item.sampleNumber}
+            </span>
+          )}
+          {item.testResult && (
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              {item.testResult}
+            </span>
+          )}
+          {item.photos && item.photos.length > 0 && (
+            <span className="flex items-center gap-1">
+              <Upload className="w-3 h-3" />
+              {item.photos.length}
+            </span>
+          )}
+          {item.plannedEndDate && (
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {item.plannedEndDate}
+            </span>
           )}
           {getStatusBadge()}
         </div>
