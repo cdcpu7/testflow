@@ -6,7 +6,73 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TestItem } from "@shared/schema";
+
+function DateInput({ value, onChange, disabled, placeholder, testId }: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  testId?: string;
+}) {
+  const [textValue, setTextValue] = useState(value ? formatDateForDisplay(value) : "");
+
+  function formatDateForDisplay(isoDate: string): string {
+    if (!isoDate) return "";
+    const parts = isoDate.split("-");
+    if (parts.length === 3) {
+      return `${parts[0]}.${parts[1]}.${parts[2]}`;
+    }
+    return isoDate;
+  }
+
+  function parseInputToISO(input: string): string {
+    const cleaned = input.replace(/[^\d.]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length === 3 && parts[0].length === 4 && parts[1].length === 2 && parts[2].length === 2) {
+      return `${parts[0]}-${parts[1]}-${parts[2]}`;
+    }
+    return "";
+  }
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    setTextValue(input);
+    const isoDate = parseInputToISO(input);
+    if (isoDate) {
+      onChange(isoDate);
+    }
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isoDate = e.target.value;
+    onChange(isoDate);
+    setTextValue(formatDateForDisplay(isoDate));
+  };
+
+  return (
+    <div className="flex gap-1">
+      <Input
+        type="text"
+        placeholder={placeholder || "YYYY.MM.DD"}
+        value={textValue}
+        onChange={handleTextChange}
+        disabled={disabled}
+        className="flex-1"
+        data-testid={testId ? `${testId}-text` : undefined}
+      />
+      <Input
+        type="date"
+        value={value}
+        onChange={handleDateChange}
+        disabled={disabled}
+        className="w-10 px-1"
+        data-testid={testId}
+      />
+    </div>
+  );
+}
 
 interface TestItemRowProps {
   item: TestItem;
@@ -61,32 +127,38 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
           <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-          {item.sampleNumber && (
-            <span className="flex items-center gap-1">
-              <Package className="w-3 h-3" />
-              {item.sampleNumber}
-            </span>
-          )}
-          {item.testResult && (
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              {item.testResult}
-            </span>
-          )}
-          {item.photos && item.photos.length > 0 && (
-            <span className="flex items-center gap-1">
-              <Upload className="w-3 h-3" />
-              {item.photos.length}
-            </span>
-          )}
-          {item.plannedEndDate && (
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {item.plannedEndDate}
-            </span>
-          )}
-          {getStatusBadge()}
+        <div className="flex items-center gap-4 shrink-0 text-xs">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <span>진행:</span>
+            {getStatusBadge()}
+          </div>
+          
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground">결과:</span>
+            {item.testResult ? (
+              <Badge 
+                variant="outline" 
+                className={
+                  item.testResult === "OK" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
+                  item.testResult === "NG" ? "bg-red-500/20 text-red-400 border-red-500/30" :
+                  "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                }
+              >
+                {item.testResult}
+              </Badge>
+            ) : (
+              <span className="text-muted-foreground">-</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground">보고서:</span>
+            {item.reportCompleted ? (
+              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">완료</Badge>
+            ) : (
+              <span className="text-muted-foreground">미완료</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -102,32 +174,29 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">시작일</Label>
-                    <Input
-                      type="date"
+                    <DateInput
                       value={item.plannedStartDate || ""}
-                      onChange={(e) => onUpdate({ plannedStartDate: e.target.value })}
+                      onChange={(value) => onUpdate({ plannedStartDate: value })}
                       disabled={!isEditing}
-                      data-testid={`input-start-date-${item.id}`}
+                      testId={`input-start-date-${item.id}`}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">완료예정일</Label>
-                    <Input
-                      type="date"
+                    <DateInput
                       value={item.plannedEndDate || ""}
-                      onChange={(e) => onUpdate({ plannedEndDate: e.target.value })}
+                      onChange={(value) => onUpdate({ plannedEndDate: value })}
                       disabled={!isEditing}
-                      data-testid={`input-end-date-${item.id}`}
+                      testId={`input-end-date-${item.id}`}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">실제완료일</Label>
-                    <Input
-                      type="date"
+                    <DateInput
                       value={item.actualEndDate || ""}
-                      onChange={(e) => onUpdate({ actualEndDate: e.target.value })}
+                      onChange={(value) => onUpdate({ actualEndDate: value })}
                       disabled={!isEditing}
-                      data-testid={`input-actual-date-${item.id}`}
+                      testId={`input-actual-date-${item.id}`}
                     />
                   </div>
                 </div>
@@ -183,14 +252,19 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onPhotoCl
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         3. 시험 완료
                       </Label>
-                      <Input
-                        type="text"
-                        placeholder="시험결과 (숫자)"
+                      <Select
                         value={item.testResult || ""}
-                        onChange={(e) => onUpdate({ testResult: e.target.value })}
-                        className="flex-1 h-8 text-sm"
-                        data-testid={`input-test-result-${item.id}`}
-                      />
+                        onValueChange={(value) => onUpdate({ testResult: value })}
+                      >
+                        <SelectTrigger className="flex-1 h-8" data-testid={`select-test-result-${item.id}`}>
+                          <SelectValue placeholder="결과 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="OK">OK</SelectItem>
+                          <SelectItem value="NG">NG</SelectItem>
+                          <SelectItem value="보류중">보류중</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
