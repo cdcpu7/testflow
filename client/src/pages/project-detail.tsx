@@ -646,17 +646,19 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
 
         <TabsContent value="test-items" className="space-y-4 mt-4">
-          <div className="flex justify-end gap-2 flex-wrap">
-            <Button variant="outline" onClick={handleExcelExport} data-testid="button-export-excel">
-              <Download className="w-4 h-4 mr-2" />
-              엑셀 내보내기
-            </Button>
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelImport} className="hidden" ref={excelImportRef} data-testid="input-import-excel" />
-            <Button variant="outline" onClick={() => { excelImportRef.current?.click(); }} disabled={importTestItems.isPending} data-testid="button-import-excel">
-              <Upload className="w-4 h-4 mr-2" />
-              {importTestItems.isPending ? "불러오는 중..." : "파일 불러오기"}
-            </Button>
-            <Button onClick={() => setShowTestItemForm(true)} data-testid="button-add-test-item">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExcelExport} className="flex-1 sm:flex-none" data-testid="button-export-excel">
+                <Download className="w-4 h-4 mr-2" />
+                엑셀 내보내기
+              </Button>
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelImport} className="hidden" ref={excelImportRef} data-testid="input-import-excel" />
+              <Button variant="outline" onClick={() => { excelImportRef.current?.click(); }} disabled={importTestItems.isPending} className="flex-1 sm:flex-none" data-testid="button-import-excel">
+                <Upload className="w-4 h-4 mr-2" />
+                {importTestItems.isPending ? "불러오는 중..." : "파일 불러오기"}
+              </Button>
+            </div>
+            <Button onClick={() => setShowTestItemForm(true)} className="w-full sm:w-auto" data-testid="button-add-test-item">
               <Plus className="w-4 h-4 mr-2" />
               시험항목추가
             </Button>

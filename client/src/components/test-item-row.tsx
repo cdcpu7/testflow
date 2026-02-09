@@ -84,29 +84,28 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
   return (
     <div className="border border-border rounded-md bg-card" data-testid={`test-item-${item.id}`}>
       <div
-        className="flex items-center gap-4 p-4 cursor-pointer hover-elevate"
+        className="flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 cursor-pointer hover-elevate"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <Button size="icon" variant="ghost" className="shrink-0">
+        <Button size="icon" variant="ghost" className="shrink-0 mt-0.5 sm:mt-0">
           {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </Button>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col gap-2">
           <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
-        </div>
-
-        <div className="flex items-center gap-4 shrink-0 text-xs flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">진행:</span>
-            {getProgressBadge()}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">결과:</span>
-            {getResultBadge()}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">보고서:</span>
-            {getReportBadge()}
+          <div className="flex items-center gap-3 sm:gap-4 text-xs flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">진행:</span>
+              {getProgressBadge()}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">결과:</span>
+              {getResultBadge()}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">보고서:</span>
+              {getReportBadge()}
+            </div>
           </div>
         </div>
       </div>
