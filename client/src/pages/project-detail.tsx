@@ -403,8 +403,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
       {/* Summary section: result summary + metrics + attachments */}
       <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
+        <div>
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
               <CardTitle className="text-lg font-medium">시험 결과 요약</CardTitle>
             </CardHeader>
@@ -457,102 +457,99 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-medium">첨부 자료</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4" />
-                    1. 일정
-                  </span>
-                  <Button size="sm" variant="ghost" onClick={() => handleImageUpload("schedule")} data-testid="button-upload-schedule-image">
-                    <Upload className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isEditingScheduleDesc ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <Input value={editedScheduleDesc} onChange={(e) => setEditedScheduleDesc(e.target.value)} placeholder="일정 설명 입력" className="flex-1 text-sm" data-testid="input-schedule-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ scheduleDescription: editedScheduleDesc }); if (e.key === "Escape") setIsEditingScheduleDesc(false); }} />
-                      <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ scheduleDescription: editedScheduleDesc })} disabled={updateProject.isPending} data-testid="button-save-schedule-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setIsEditingScheduleDesc(false)} data-testid="button-cancel-schedule-desc"><X className="w-4 h-4" /></Button>
+              <div className="border-t pt-4 space-y-4" data-testid="attachments-section">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" />
+                        1. 일정
+                      </span>
+                      <Button size="sm" variant="ghost" onClick={() => handleImageUpload("schedule")} data-testid="button-upload-schedule-image">
+                        <Upload className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedScheduleDesc(project.scheduleDescription || ""); setIsEditingScheduleDesc(true); }} data-testid="button-edit-schedule-desc">
-                      <p className="text-sm text-muted-foreground truncate">{project.scheduleDescription || "설명 추가..."}</p>
-                      <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    <div className="flex items-center gap-2">
+                      {isEditingScheduleDesc ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input value={editedScheduleDesc} onChange={(e) => setEditedScheduleDesc(e.target.value)} placeholder="일정 설명 입력" className="flex-1 text-sm" data-testid="input-schedule-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ scheduleDescription: editedScheduleDesc }); if (e.key === "Escape") setIsEditingScheduleDesc(false); }} />
+                          <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ scheduleDescription: editedScheduleDesc })} disabled={updateProject.isPending} data-testid="button-save-schedule-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setIsEditingScheduleDesc(false)} data-testid="button-cancel-schedule-desc"><X className="w-4 h-4" /></Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedScheduleDesc(project.scheduleDescription || ""); setIsEditingScheduleDesc(true); }} data-testid="button-edit-schedule-desc">
+                          <p className="text-sm text-muted-foreground truncate">{project.scheduleDescription || "설명 추가..."}</p>
+                          <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                {project.scheduleImage ? (
-                  <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.scheduleImage!)} data-testid="image-schedule">
-                    <img src={project.scheduleImage} alt="일정" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Maximize2 className="w-6 h-6 text-white" />
-                    </div>
+                    {project.scheduleImage ? (
+                      <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.scheduleImage!)} data-testid="image-schedule">
+                        <img src={project.scheduleImage} alt="일정" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Maximize2 className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("schedule")}>
+                        <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("schedule")}>
-                    <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4" />
+                        2. 제품사양
+                      </span>
+                      <Button size="sm" variant="ghost" onClick={() => handleImageUpload("product")} data-testid="button-upload-product-image">
+                        <Upload className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isEditingProductSpecDesc ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input value={editedProductSpecDesc} onChange={(e) => setEditedProductSpecDesc(e.target.value)} placeholder="제품사양 설명 입력" className="flex-1 text-sm" data-testid="input-product-spec-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ productSpecDescription: editedProductSpecDesc }); if (e.key === "Escape") setIsEditingProductSpecDesc(false); }} />
+                          <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ productSpecDescription: editedProductSpecDesc })} disabled={updateProject.isPending} data-testid="button-save-product-spec-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setIsEditingProductSpecDesc(false)} data-testid="button-cancel-product-spec-desc"><X className="w-4 h-4" /></Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedProductSpecDesc(project.productSpecDescription || ""); setIsEditingProductSpecDesc(true); }} data-testid="button-edit-product-spec-desc">
+                          <p className="text-sm text-muted-foreground truncate">{project.productSpecDescription || "설명 추가..."}</p>
+                          <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                        </div>
+                      )}
+                    </div>
+                    {project.productImage ? (
+                      <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.productImage!)} data-testid="image-product">
+                        <img src={project.productImage} alt="제품사양" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Maximize2 className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("product")}>
+                        <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {project.productSpec && (
+                  <div className="space-y-2">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <FileText className="w-4 h-4" />
+                      제품 사양 텍스트
+                    </span>
+                    <div className="p-3 rounded-md bg-muted/50 cursor-pointer hover-elevate" onClick={() => setSpecViewerOpen(true)} data-testid="button-view-spec">
+                      <p className="text-sm line-clamp-3">{project.productSpec}</p>
+                      <span className="text-xs text-primary mt-2 block">클릭하여 전체 보기</span>
+                    </div>
                   </div>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium flex items-center gap-1.5">
-                    <ImageIcon className="w-4 h-4" />
-                    2. 제품사양
-                  </span>
-                  <Button size="sm" variant="ghost" onClick={() => handleImageUpload("product")} data-testid="button-upload-product-image">
-                    <Upload className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isEditingProductSpecDesc ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <Input value={editedProductSpecDesc} onChange={(e) => setEditedProductSpecDesc(e.target.value)} placeholder="제품사양 설명 입력" className="flex-1 text-sm" data-testid="input-product-spec-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ productSpecDescription: editedProductSpecDesc }); if (e.key === "Escape") setIsEditingProductSpecDesc(false); }} />
-                      <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ productSpecDescription: editedProductSpecDesc })} disabled={updateProject.isPending} data-testid="button-save-product-spec-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setIsEditingProductSpecDesc(false)} data-testid="button-cancel-product-spec-desc"><X className="w-4 h-4" /></Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedProductSpecDesc(project.productSpecDescription || ""); setIsEditingProductSpecDesc(true); }} data-testid="button-edit-product-spec-desc">
-                      <p className="text-sm text-muted-foreground truncate">{project.productSpecDescription || "설명 추가..."}</p>
-                      <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                    </div>
-                  )}
-                </div>
-                {project.productImage ? (
-                  <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.productImage!)} data-testid="image-product">
-                    <img src={project.productImage} alt="제품사양" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Maximize2 className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("product")}>
-                    <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
-                  </div>
-                )}
-              </div>
-
-              {project.productSpec && (
-                <div className="space-y-2">
-                  <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                    <FileText className="w-4 h-4" />
-                    제품 사양 텍스트
-                  </span>
-                  <div className="p-3 rounded-md bg-muted/50 cursor-pointer hover-elevate" onClick={() => setSpecViewerOpen(true)} data-testid="button-view-spec">
-                    <p className="text-sm line-clamp-3">{project.productSpec}</p>
-                    <span className="text-xs text-primary mt-2 block">클릭하여 전체 보기</span>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
