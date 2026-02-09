@@ -83,7 +83,9 @@ export function AppSidebar({ onNewProject }: AppSidebarProps) {
       <SidebarContent>
         <SidebarGroup className="flex-1 overflow-hidden">
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-4 py-2 flex items-center justify-between gap-2">
-            <span>프로젝트 목록</span>
+            <Link href="/" className="cursor-pointer hover:text-foreground transition-colors" data-testid="link-projects-list">
+              프로젝트 목록
+            </Link>
             <Badge variant="secondary" className="text-xs">
               {projects.length}
             </Badge>
