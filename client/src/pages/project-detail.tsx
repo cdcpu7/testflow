@@ -401,56 +401,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
       </div>
 
-      {/* Summary section: stats + result summary + attachments */}
+      {/* Summary section: result summary + metrics + attachments */}
       <div className="space-y-6">
-        {/* 4 Metric Cards in 2x2 grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card data-testid="card-test-progress">
-            <CardContent className="p-4 space-y-3">
-              <span className="text-sm font-medium text-muted-foreground">시험 진행율</span>
-              <div className="text-lg font-semibold">
-                {completedTests} / {totalTests}
-                <span className="text-sm font-normal text-muted-foreground ml-2">({testProgressPct}%)</span>
-              </div>
-              <Progress value={testProgressPct} className="h-2" />
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-issue-improve">
-            <CardContent className="p-4 space-y-3">
-              <span className="text-sm font-medium text-muted-foreground">문제항목 개선율</span>
-              <div className="text-lg font-semibold">
-                {completedIssues} / {totalIssues}
-                <span className="text-sm font-normal text-muted-foreground ml-2">({issueImprovePct}%)</span>
-              </div>
-              <Progress value={issueImprovePct} className="h-2" />
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-report-rate">
-            <CardContent className="p-4 space-y-3">
-              <span className="text-sm font-medium text-muted-foreground">보고서 작성율</span>
-              <div className="text-lg font-semibold">
-                {reportsCompleted} / {totalTests}
-                <span className="text-sm font-normal text-muted-foreground ml-2">({reportPct}%)</span>
-              </div>
-              <Progress value={reportPct} className="h-2" />
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-pass-rate">
-            <CardContent className="p-4 space-y-3">
-              <span className="text-sm font-medium text-muted-foreground">시험 합격율</span>
-              <div className="text-lg font-semibold">
-                {okCount} / {totalTests}
-                <span className="text-sm font-normal text-muted-foreground ml-2">({passPct}%)</span>
-              </div>
-              <Progress value={passPct} className="h-2" />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Result summary row + Attachments */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
@@ -490,6 +442,21 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   </Button>
                 </div>
               )}
+
+              <div className="border-t pt-4 space-y-3" data-testid="metrics-list">
+                {[
+                  { label: "시험 진행율", done: completedTests, total: totalTests, pct: testProgressPct, testid: "metric-test-progress" },
+                  { label: "시험 합격율", done: okCount, total: totalTests, pct: passPct, testid: "metric-pass-rate" },
+                  { label: "문제 개선율", done: completedIssues, total: totalIssues, pct: issueImprovePct, testid: "metric-issue-improve" },
+                  { label: "보고서 작성율", done: reportsCompleted, total: totalTests, pct: reportPct, testid: "metric-report-rate" },
+                ].map((m) => (
+                  <div key={m.testid} className="flex items-center gap-3" data-testid={m.testid}>
+                    <span className="text-sm text-muted-foreground w-28 shrink-0">{m.label}</span>
+                    <span className="text-sm font-medium w-20 shrink-0">{m.done}/{m.total} ({m.pct}%)</span>
+                    <Progress value={m.pct} className="h-2 flex-1" />
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
