@@ -447,7 +447,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         <div>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
-              <CardTitle className="text-lg font-medium">프로젝트 현황</CardTitle>
+              <CardTitle className="text-lg font-semibold">프로젝트 현황</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-6 flex-wrap text-sm">
@@ -492,8 +492,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   { label: "보고서 작성율", done: reportsCompleted, total: totalTests, pct: reportPct, testid: "metric-report-rate" },
                 ].map((m) => (
                   <div key={m.testid} className="flex items-center gap-3" data-testid={m.testid}>
-                    <span className="text-sm text-muted-foreground w-28 shrink-0">{m.label}</span>
-                    <span className="text-sm font-medium w-20 shrink-0">{m.done}/{m.total} ({m.pct}%)</span>
+                    <span className="text-[13px] text-muted-foreground w-28 shrink-0">{m.label}</span>
+                    <span className="text-[13px] font-medium w-20 shrink-0">{m.done}/{m.total} ({m.pct}%)</span>
                     <Progress value={m.pct} className="h-2 flex-1" />
                   </div>
                 ))}
@@ -503,9 +503,9 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium flex items-center gap-1.5">
+                      <span className="text-[15px] font-semibold flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
-                        1. 일정
+                        일정
                       </span>
                       <Button size="sm" variant="ghost" onClick={() => handleImageUpload("schedule")} data-testid="button-upload-schedule-image">
                         <Upload className="w-3.5 h-3.5" />
@@ -541,9 +541,9 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium flex items-center gap-1.5">
+                      <span className="text-[15px] font-semibold flex items-center gap-1.5">
                         <ImageIcon className="w-4 h-4" />
-                        2. 제품사양
+                        제품사양
                       </span>
                       <Button size="sm" variant="ghost" onClick={() => handleImageUpload("product")} data-testid="button-upload-product-image">
                         <Upload className="w-3.5 h-3.5" />
