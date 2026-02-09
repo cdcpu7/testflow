@@ -80,7 +80,7 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
         </Button>
 
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
+          <h4 className="text-[15px] font-semibold flex items-center gap-1.5">{item.name}</h4>
         </div>
 
         <div className="flex items-center gap-4 shrink-0 text-xs flex-wrap">
@@ -155,22 +155,22 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
 
                 <div className="space-y-2">
                   <Label className="text-[15px] font-semibold">3. 문제 내용</Label>
-                  <DebouncedTextarea placeholder="문제 내용을 입력하세요" value={item.issueContent || ""} onSave={(v) => onUpdate({ issueContent: v })} rows={2} data-testid={`input-issue-content-${item.id}`} />
+                  <DebouncedTextarea placeholder="문제 내용을 입력하세요" value={item.issueContent || ""} onSave={(v) => onUpdate({ issueContent: v })} rows={4} data-testid={`input-issue-content-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-[15px] font-semibold">4. 문제 원인</Label>
-                  <DebouncedTextarea placeholder="문제 원인을 입력하세요" value={item.issueCause || ""} onSave={(v) => onUpdate({ issueCause: v })} rows={2} data-testid={`input-issue-cause-${item.id}`} />
+                  <DebouncedTextarea placeholder="문제 원인을 입력하세요" value={item.issueCause || ""} onSave={(v) => onUpdate({ issueCause: v })} rows={4} data-testid={`input-issue-cause-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-[15px] font-semibold">5. 문제 대책</Label>
-                  <DebouncedTextarea placeholder="문제 대책을 입력하세요" value={item.issueCountermeasure || ""} onSave={(v) => onUpdate({ issueCountermeasure: v })} rows={2} data-testid={`input-issue-countermeasure-${item.id}`} />
+                  <DebouncedTextarea placeholder="문제 대책을 입력하세요" value={item.issueCountermeasure || ""} onSave={(v) => onUpdate({ issueCountermeasure: v })} rows={4} data-testid={`input-issue-countermeasure-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-[15px] font-semibold">6. 대책 검증 결과</Label>
-                  <DebouncedTextarea placeholder="대책 검증 결과를 입력하세요" value={item.verificationResult || ""} onSave={(v) => onUpdate({ verificationResult: v })} rows={2} data-testid={`input-verification-result-${item.id}`} />
+                  <DebouncedTextarea placeholder="대책 검증 결과를 입력하세요" value={item.verificationResult || ""} onSave={(v) => onUpdate({ verificationResult: v })} rows={4} data-testid={`input-verification-result-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">

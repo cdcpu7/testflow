@@ -476,7 +476,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         <div>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
-              <CardTitle className="text-lg font-semibold">프로젝트 현황</CardTitle>
+              <CardTitle className="text-[15px] font-semibold flex items-center gap-1.5">프로젝트 현황</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-6 flex-wrap text-sm">
@@ -533,7 +533,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[15px] font-semibold flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" />
+
                         일정
                       </span>
                       <Button size="sm" variant="ghost" onClick={() => handleImageUpload("schedule")} data-testid="button-upload-schedule-image">
@@ -571,7 +571,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[15px] font-semibold flex items-center gap-1.5">
-                        <ImageIcon className="w-4 h-4" />
+
                         제품사양
                       </span>
                       <Button size="sm" variant="ghost" onClick={() => handleImageUpload("product")} data-testid="button-upload-product-image">
@@ -630,11 +630,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <TabsList data-testid="tabs-list">
             <TabsTrigger value="test-items" data-testid="tab-test-items">
-              <FlaskIcon className="w-4 h-4 mr-1.5" />
+
               시험항목 ({testItems.length})
             </TabsTrigger>
             <TabsTrigger value="issue-items" data-testid="tab-issue-items">
-              <AlertTriangle className="w-4 h-4 mr-1.5" />
+
               문제항목 ({issueItems.length})
             </TabsTrigger>
           </TabsList>

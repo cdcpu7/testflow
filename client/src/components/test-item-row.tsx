@@ -92,7 +92,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
         </Button>
 
         <div className="flex-1 min-w-0 flex flex-col gap-2">
-          <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
+          <h4 className="text-[15px] font-semibold flex items-center gap-1.5">{item.name}</h4>
           <div className="flex items-center gap-3 sm:gap-4 text-xs flex-wrap">
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground">진행:</span>
@@ -147,7 +147,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                     placeholder="시험 조건을 입력하세요"
                     value={item.testCondition || ""}
                     onSave={(v) => onUpdate({ testCondition: v })}
-                    rows={2}
+                    rows={4}
                     data-testid={`input-test-condition-${item.id}`}
                   />
                 </div>
@@ -158,7 +158,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                     placeholder="판정 기준을 입력하세요"
                     value={item.judgmentCriteria || ""}
                     onSave={(v) => onUpdate({ judgmentCriteria: v })}
-                    rows={2}
+                    rows={4}
                     data-testid={`input-judgment-criteria-${item.id}`}
                   />
                 </div>
@@ -169,7 +169,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                     placeholder="시험 데이터를 입력하세요"
                     value={item.testData || ""}
                     onSave={(v) => onUpdate({ testData: v })}
-                    rows={2}
+                    rows={4}
                     data-testid={`input-test-data-${item.id}`}
                   />
                 </div>
