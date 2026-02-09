@@ -19,26 +19,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const testItemFormSchema = z.object({
-  name: z.string().min(1, "시험항목명을 입력하세요"),
+const issueItemFormSchema = z.object({
+  name: z.string().min(1, "문제항목명을 입력하세요"),
 });
 
-type TestItemFormData = z.infer<typeof testItemFormSchema>;
+type IssueItemFormData = z.infer<typeof issueItemFormSchema>;
 
-interface TestItemFormProps {
+interface IssueItemFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: TestItemFormData) => void;
+  onSubmit: (data: IssueItemFormData) => void;
   isPending?: boolean;
 }
 
-export function TestItemForm({ open, onClose, onSubmit, isPending }: TestItemFormProps) {
-  const form = useForm<TestItemFormData>({
-    resolver: zodResolver(testItemFormSchema),
+export function IssueItemForm({ open, onClose, onSubmit, isPending }: IssueItemFormProps) {
+  const form = useForm<IssueItemFormData>({
+    resolver: zodResolver(issueItemFormSchema),
     defaultValues: { name: "" },
   });
 
-  const handleSubmit = (data: TestItemFormData) => {
+  const handleSubmit = (data: IssueItemFormData) => {
     onSubmit(data);
     form.reset();
   };
@@ -47,8 +47,8 @@ export function TestItemForm({ open, onClose, onSubmit, isPending }: TestItemFor
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>새 시험항목</DialogTitle>
-          <DialogDescription>시험항목명을 입력하세요. 세부 내용은 추가 후 편집할 수 있습니다.</DialogDescription>
+          <DialogTitle>새 문제항목</DialogTitle>
+          <DialogDescription>문제항목명을 입력하세요. 세부 내용은 추가 후 편집할 수 있습니다.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -57,9 +57,9 @@ export function TestItemForm({ open, onClose, onSubmit, isPending }: TestItemFor
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>시험항목명 *</FormLabel>
+                  <FormLabel>문제항목명 *</FormLabel>
                   <FormControl>
-                    <Input placeholder="시험항목명을 입력하세요" {...field} data-testid="input-test-item-name" />
+                    <Input placeholder="문제항목명을 입력하세요" {...field} data-testid="input-issue-item-name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -67,7 +67,7 @@ export function TestItemForm({ open, onClose, onSubmit, isPending }: TestItemFor
             />
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onClose}>취소</Button>
-              <Button type="submit" disabled={isPending} data-testid="button-submit-test-item">
+              <Button type="submit" disabled={isPending} data-testid="button-submit-issue-item">
                 {isPending ? "추가 중..." : "추가"}
               </Button>
             </div>

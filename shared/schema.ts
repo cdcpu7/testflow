@@ -46,23 +46,48 @@ export const testItemSchema = z.object({
   id: z.string(),
   projectId: z.string(),
   name: z.string().min(1, "시험항목명을 입력하세요"),
-  description: z.string().optional(),
+  lastModifiedDate: z.string().optional(),
   plannedStartDate: z.string().optional(),
   plannedEndDate: z.string().optional(),
   actualEndDate: z.string().optional(),
-  sampleReceived: z.boolean().default(false),
-  sampleNumber: z.string().optional(),
-  testProgressStatus: z.enum(["예정", "진행중", "완료"]).default("예정"),
-  testCompleted: z.boolean().default(false),
-  testResult: z.string().optional(),
-  reportCompleted: z.boolean().default(false),
-  photos: z.array(z.string()).default([]),
-  dataFiles: z.array(z.string()).default([]),
-  numericData: z.string().optional(),
+  testCondition: z.string().optional(),
+  judgmentCriteria: z.string().optional(),
+  testData: z.string().optional(),
+  testResult: z.enum(["", "OK", "NG", "TBD"]).default(""),
+  progressStatus: z.enum(["대기중", "진행중", "완료"]).default("대기중"),
+  reportStatus: z.enum(["대기중", "작성중", "완료"]).default("대기중"),
   notes: z.string().optional(),
+  photos: z.array(z.string()).default([]),
+  graphs: z.array(z.string()).default([]),
 });
 
 export const insertTestItemSchema = testItemSchema.omit({ id: true });
 
 export type TestItem = z.infer<typeof testItemSchema>;
 export type InsertTestItem = z.infer<typeof insertTestItemSchema>;
+
+// Issue Item schema (문제항목)
+export const issueItemSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  name: z.string().min(1, "문제항목명을 입력하세요"),
+  lastModifiedDate: z.string().optional(),
+  severity: z.enum(["Low", "Medium", "High"]).default("Medium"),
+  occurredDate: z.string().optional(),
+  plannedEndDate: z.string().optional(),
+  actualEndDate: z.string().optional(),
+  relatedTestItemId: z.string().optional(),
+  issueContent: z.string().optional(),
+  issueCause: z.string().optional(),
+  issueCountermeasure: z.string().optional(),
+  verificationResult: z.string().optional(),
+  progressStatus: z.enum(["대기중", "진행중", "완료"]).default("대기중"),
+  notes: z.string().optional(),
+  photos: z.array(z.string()).default([]),
+  graphs: z.array(z.string()).default([]),
+});
+
+export const insertIssueItemSchema = issueItemSchema.omit({ id: true });
+
+export type IssueItem = z.infer<typeof issueItemSchema>;
+export type InsertIssueItem = z.infer<typeof insertIssueItemSchema>;

@@ -1,0 +1,301 @@
+import { useState } from "react";
+import { ChevronDown, ChevronRight, Calendar, Upload, Trash2, BarChart3, Maximize2, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { IssueItem, TestItem } from "@shared/schema";
+
+function DateInput({ value, onChange, disabled, testId }: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  testId?: string;
+}) {
+  const [textValue, setTextValue] = useState(value ? formatDisplay(value) : "");
+
+  function formatDisplay(iso: string): string {
+    if (!iso) return "";
+    const p = iso.split("-");
+    return p.length === 3 ? `${p[0]}.${p[1]}.${p[2]}` : iso;
+  }
+
+  function parseToISO(input: string): string {
+    const cleaned = input.replace(/[^\d.]/g, "");
+    const p = cleaned.split(".");
+    if (p.length === 3 && p[0].length === 4 && p[1].length === 2 && p[2].length === 2) {
+      return `${p[0]}-${p[1]}-${p[2]}`;
+    }
+    return "";
+  }
+
+  return (
+    <div className="flex gap-1">
+      <Input
+        type="text"
+        placeholder="YYYY.MM.DD"
+        value={textValue}
+        onChange={(e) => {
+          setTextValue(e.target.value);
+          const iso = parseToISO(e.target.value);
+          if (iso) onChange(iso);
+        }}
+        disabled={disabled}
+        className="flex-1"
+        data-testid={testId ? `${testId}-text` : undefined}
+      />
+      <Input
+        type="date"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setTextValue(formatDisplay(e.target.value));
+        }}
+        disabled={disabled}
+        className="w-10 px-1"
+        data-testid={testId}
+      />
+    </div>
+  );
+}
+
+interface IssueItemRowProps {
+  item: IssueItem;
+  testItems: TestItem[];
+  onUpdate: (updates: Partial<IssueItem>) => void;
+  onDelete: () => void;
+  onPhotoUpload: (file: File) => void;
+  onGraphUpload: (file: File) => void;
+  onPhotoClick: (url: string) => void;
+}
+
+export function IssueItemRow({ item, testItems, onUpdate, onDelete, onPhotoUpload, onGraphUpload, onPhotoClick }: IssueItemRowProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const getSeverityBadge = () => {
+    switch (item.severity) {
+      case "High":
+        return <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30">High</Badge>;
+      case "Medium":
+        return <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30">Medium</Badge>;
+      default:
+        return <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">Low</Badge>;
+    }
+  };
+
+  const getProgressBadge = () => {
+    switch (item.progressStatus) {
+      case "완료":
+        return <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">완료</Badge>;
+      case "진행중":
+        return <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30">진행중</Badge>;
+      default:
+        return <Badge variant="outline" className="bg-muted text-muted-foreground">대기중</Badge>;
+    }
+  };
+
+  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onPhotoUpload(file);
+  };
+
+  const handleGraphFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onGraphUpload(file);
+  };
+
+  return (
+    <div className="border border-border rounded-md bg-card" data-testid={`issue-item-${item.id}`}>
+      <div
+        className="flex items-center gap-4 p-4 cursor-pointer hover-elevate"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <Button size="icon" variant="ghost" className="shrink-0">
+          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </Button>
+
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
+        </div>
+
+        <div className="flex items-center gap-4 shrink-0 text-xs flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground">심각도:</span>
+            {getSeverityBadge()}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground">진행:</span>
+            {getProgressBadge()}
+          </div>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-0 border-t border-border">
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center gap-6 p-3 rounded-md bg-muted/50 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">최종 수정일</Label>
+                <DateInput value={item.lastModifiedDate || ""} onChange={(v) => onUpdate({ lastModifiedDate: v })} testId={`input-issue-last-modified-${item.id}`} />
+              </div>
+              <div className="flex items-center gap-3">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">심각도</Label>
+                <Select value={item.severity} onValueChange={(v) => onUpdate({ severity: v as any })}>
+                  <SelectTrigger className="w-28" data-testid={`select-severity-${item.id}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    1) 일정 관리
+                  </h5>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">발생일</Label>
+                      <DateInput value={item.occurredDate || ""} onChange={(v) => onUpdate({ occurredDate: v })} testId={`input-occurred-date-${item.id}`} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">완료예정일</Label>
+                      <DateInput value={item.plannedEndDate || ""} onChange={(v) => onUpdate({ plannedEndDate: v })} testId={`input-issue-end-date-${item.id}`} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">실제완료일</Label>
+                      <DateInput value={item.actualEndDate || ""} onChange={(v) => onUpdate({ actualEndDate: v })} testId={`input-issue-actual-date-${item.id}`} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">2) 연관 시험 항목</Label>
+                  <Select value={item.relatedTestItemId || ""} onValueChange={(v) => onUpdate({ relatedTestItemId: v })}>
+                    <SelectTrigger data-testid={`select-related-test-${item.id}`}>
+                      <SelectValue placeholder="시험항목 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {testItems.map((ti) => (
+                        <SelectItem key={ti.id} value={ti.id}>{ti.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">3) 문제 내용</Label>
+                  <Textarea placeholder="문제 내용을 입력하세요" value={item.issueContent || ""} onChange={(e) => onUpdate({ issueContent: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-content-${item.id}`} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">4) 문제 원인</Label>
+                  <Textarea placeholder="문제 원인을 입력하세요" value={item.issueCause || ""} onChange={(e) => onUpdate({ issueCause: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-cause-${item.id}`} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">5) 문제 대책</Label>
+                  <Textarea placeholder="문제 대책을 입력하세요" value={item.issueCountermeasure || ""} onChange={(e) => onUpdate({ issueCountermeasure: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-countermeasure-${item.id}`} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">6) 대책 검증 결과</Label>
+                  <Textarea placeholder="대책 검증 결과를 입력하세요" value={item.verificationResult || ""} onChange={(e) => onUpdate({ verificationResult: e.target.value })} className="resize-none" rows={2} data-testid={`input-verification-result-${item.id}`} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">7) 진행 상태</Label>
+                  <Select value={item.progressStatus} onValueChange={(v) => onUpdate({ progressStatus: v as any })}>
+                    <SelectTrigger data-testid={`select-issue-progress-${item.id}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="대기중">대기중</SelectItem>
+                      <SelectItem value="진행중">진행중</SelectItem>
+                      <SelectItem value="완료">완료</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">8) 메모</Label>
+                  <Textarea placeholder="메모를 입력하세요" value={item.notes || ""} onChange={(e) => onUpdate({ notes: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-notes-${item.id}`} />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    9) 시험 사진
+                  </h5>
+                  <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
+                    <input type="file" accept="image/*" onChange={handlePhotoFile} className="hidden" id={`issue-photo-upload-${item.id}`} data-testid={`input-issue-photo-${item.id}`} />
+                    <label htmlFor={`issue-photo-upload-${item.id}`} className="cursor-pointer flex flex-col items-center gap-2">
+                      <Upload className="w-8 h-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">클릭하여 사진 업로드</span>
+                    </label>
+                  </div>
+                  {item.photos && item.photos.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {item.photos.map((photo, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-md overflow-hidden cursor-pointer group" onClick={() => onPhotoClick(photo)} data-testid={`issue-photo-${item.id}-${idx}`}>
+                          <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Maximize2 className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    10) 시험 그래프
+                  </h5>
+                  <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
+                    <input type="file" accept="image/*" onChange={handleGraphFile} className="hidden" id={`issue-graph-upload-${item.id}`} data-testid={`input-issue-graph-${item.id}`} />
+                    <label htmlFor={`issue-graph-upload-${item.id}`} className="cursor-pointer flex flex-col items-center gap-2">
+                      <BarChart3 className="w-8 h-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">클릭하여 그래프 업로드</span>
+                    </label>
+                  </div>
+                  {item.graphs && item.graphs.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {item.graphs.map((graph, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-md overflow-hidden cursor-pointer group" onClick={() => onPhotoClick(graph)} data-testid={`issue-graph-${item.id}-${idx}`}>
+                          <img src={graph} alt={`Graph ${idx + 1}`} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Maximize2 className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-border">
+              <Button size="sm" variant="outline" className="text-destructive" onClick={onDelete} data-testid={`button-delete-issue-${item.id}`}>
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                삭제
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,13 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProjectSchema, insertTestItemSchema, insertUserSchema } from "@shared/schema";
+import { insertProjectSchema, insertTestItemSchema, insertIssueItemSchema, insertUserSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
 
-// Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -36,18 +35,15 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0].message });
       }
-
       const existing = await storage.getUserByUsername(parsed.data.username);
       if (existing) {
         return res.status(400).json({ error: "이미 사용 중인 사용자명입니다" });
       }
-
       const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
       const user = await storage.createUser({
         username: parsed.data.username,
         password: hashedPassword,
       });
-
       req.session.userId = user.id;
       res.status(201).json({ id: user.id, username: user.username });
     } catch (error) {
@@ -61,17 +57,14 @@ export async function registerRoutes(
       if (!username || !password) {
         return res.status(400).json({ error: "사용자명과 비밀번호를 입력하세요" });
       }
-
       const user = await storage.getUserByUsername(username);
       if (!user) {
         return res.status(401).json({ error: "사용자명 또는 비밀번호가 틀립니다" });
       }
-
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) {
         return res.status(401).json({ error: "사용자명 또는 비밀번호가 틀립니다" });
       }
-
       req.session.userId = user.id;
       res.json({ id: user.id, username: user.username });
     } catch (error) {
@@ -92,16 +85,13 @@ export async function registerRoutes(
     if (!req.session.userId) {
       return res.status(401).json({ error: "로그인이 필요합니다" });
     }
-
     const user = await storage.getUser(req.session.userId);
     if (!user) {
       return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
     }
-
     res.json({ id: user.id, username: user.username });
   });
 
-  // Serve uploaded files
   app.use("/uploads", (req, res, next) => {
     const filePath = path.join(uploadDir, req.path);
     if (fs.existsSync(filePath)) {
@@ -111,7 +101,6 @@ export async function registerRoutes(
     }
   });
 
-  // Auth middleware for protected routes
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: "로그인이 필요합니다" });
@@ -119,7 +108,7 @@ export async function registerRoutes(
     next();
   };
 
-  // Projects API (protected)
+  // Projects API
   app.get("/api/projects", requireAuth, async (req, res) => {
     try {
       const projects = await storage.getAllProjects();
@@ -178,7 +167,6 @@ export async function registerRoutes(
     }
   });
 
-  // Project images upload
   app.post("/api/projects/:id/images", requireAuth, upload.single("file"), async (req, res) => {
     try {
       const project = await storage.getProject(req.params.id);
@@ -188,14 +176,11 @@ export async function registerRoutes(
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
-
       const imageUrl = `/uploads/${req.file.filename}`;
       const type = req.body.type as "product" | "schedule";
-
       const updates = type === "product"
         ? { productImage: imageUrl }
         : { scheduleImage: imageUrl };
-
       const updated = await storage.updateProject(req.params.id, updates);
       res.json(updated);
     } catch (error) {
@@ -260,7 +245,6 @@ export async function registerRoutes(
     }
   });
 
-  // Test Item photos upload
   app.post("/api/test-items/:id/photos", requireAuth, upload.single("file"), async (req, res) => {
     try {
       const item = await storage.getTestItem(req.params.id);
@@ -270,14 +254,114 @@ export async function registerRoutes(
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
-
       const photoUrl = `/uploads/${req.file.filename}`;
       const photos = [...(item.photos || []), photoUrl];
-
       const updated = await storage.updateTestItem(req.params.id, { photos });
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: "Failed to upload photo" });
+    }
+  });
+
+  app.post("/api/test-items/:id/graphs", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      const item = await storage.getTestItem(req.params.id);
+      if (!item) {
+        return res.status(404).json({ error: "Test item not found" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      const graphUrl = `/uploads/${req.file.filename}`;
+      const graphs = [...(item.graphs || []), graphUrl];
+      const updated = await storage.updateTestItem(req.params.id, { graphs });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload graph" });
+    }
+  });
+
+  // Issue Items API
+  app.get("/api/projects/:projectId/issue-items", requireAuth, async (req, res) => {
+    try {
+      const items = await storage.getIssueItemsByProject(req.params.projectId);
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch issue items" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/issue-items", requireAuth, async (req, res) => {
+    try {
+      const data = { ...req.body, projectId: req.params.projectId };
+      const parsed = insertIssueItemSchema.safeParse(data);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.message });
+      }
+      const item = await storage.createIssueItem(parsed.data);
+      res.status(201).json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create issue item" });
+    }
+  });
+
+  app.patch("/api/issue-items/:id", requireAuth, async (req, res) => {
+    try {
+      const item = await storage.updateIssueItem(req.params.id, req.body);
+      if (!item) {
+        return res.status(404).json({ error: "Issue item not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update issue item" });
+    }
+  });
+
+  app.delete("/api/issue-items/:id", requireAuth, async (req, res) => {
+    try {
+      const deleted = await storage.deleteIssueItem(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Issue item not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete issue item" });
+    }
+  });
+
+  app.post("/api/issue-items/:id/photos", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      const item = await storage.getIssueItem(req.params.id);
+      if (!item) {
+        return res.status(404).json({ error: "Issue item not found" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      const photoUrl = `/uploads/${req.file.filename}`;
+      const photos = [...(item.photos || []), photoUrl];
+      const updated = await storage.updateIssueItem(req.params.id, { photos });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload photo" });
+    }
+  });
+
+  app.post("/api/issue-items/:id/graphs", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      const item = await storage.getIssueItem(req.params.id);
+      if (!item) {
+        return res.status(404).json({ error: "Issue item not found" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      const graphUrl = `/uploads/${req.file.filename}`;
+      const graphs = [...(item.graphs || []), graphUrl];
+      const updated = await storage.updateIssueItem(req.params.id, { graphs });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload graph" });
     }
   });
 

@@ -5,6 +5,8 @@ import {
   type InsertProject,
   type TestItem,
   type InsertTestItem,
+  type IssueItem,
+  type InsertIssueItem,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
@@ -14,31 +16,38 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
-  // Projects
   getAllProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, updates: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string): Promise<boolean>;
 
-  // Test Items
   getAllTestItems(): Promise<TestItem[]>;
   getTestItemsByProject(projectId: string): Promise<TestItem[]>;
   getTestItem(id: string): Promise<TestItem | undefined>;
   createTestItem(item: InsertTestItem): Promise<TestItem>;
   updateTestItem(id: string, updates: Partial<TestItem>): Promise<TestItem | undefined>;
   deleteTestItem(id: string): Promise<boolean>;
+
+  getAllIssueItems(): Promise<IssueItem[]>;
+  getIssueItemsByProject(projectId: string): Promise<IssueItem[]>;
+  getIssueItem(id: string): Promise<IssueItem | undefined>;
+  createIssueItem(item: InsertIssueItem): Promise<IssueItem>;
+  updateIssueItem(id: string, updates: Partial<IssueItem>): Promise<IssueItem | undefined>;
+  deleteIssueItem(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private projects: Map<string, Project>;
   private testItems: Map<string, TestItem>;
+  private issueItems: Map<string, IssueItem>;
 
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.testItems = new Map();
+    this.issueItems = new Map();
     this.initDefaultUser();
   }
 
@@ -70,7 +79,6 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  // Projects
   async getAllProjects(): Promise<Project[]> {
     return Array.from(this.projects.values());
   }
@@ -95,17 +103,21 @@ export class MemStorage implements IStorage {
   }
 
   async deleteProject(id: string): Promise<boolean> {
-    // Delete associated test items
     const items = Array.from(this.testItems.values()).filter(
       (item) => item.projectId === id
     );
     for (const item of items) {
       this.testItems.delete(item.id);
     }
+    const issues = Array.from(this.issueItems.values()).filter(
+      (item) => item.projectId === id
+    );
+    for (const issue of issues) {
+      this.issueItems.delete(issue.id);
+    }
     return this.projects.delete(id);
   }
 
-  // Test Items
   async getAllTestItems(): Promise<TestItem[]> {
     return Array.from(this.testItems.values());
   }
@@ -125,12 +137,11 @@ export class MemStorage implements IStorage {
     const item: TestItem = {
       ...itemData,
       id,
-      sampleReceived: itemData.sampleReceived ?? false,
-      testProgressStatus: itemData.testProgressStatus ?? "예정",
-      testCompleted: itemData.testCompleted ?? false,
-      reportCompleted: itemData.reportCompleted ?? false,
+      testResult: itemData.testResult ?? "",
+      progressStatus: itemData.progressStatus ?? "대기중",
+      reportStatus: itemData.reportStatus ?? "대기중",
       photos: itemData.photos ?? [],
-      dataFiles: itemData.dataFiles ?? [],
+      graphs: itemData.graphs ?? [],
     };
     this.testItems.set(id, item);
     return item;
@@ -146,6 +157,46 @@ export class MemStorage implements IStorage {
 
   async deleteTestItem(id: string): Promise<boolean> {
     return this.testItems.delete(id);
+  }
+
+  async getAllIssueItems(): Promise<IssueItem[]> {
+    return Array.from(this.issueItems.values());
+  }
+
+  async getIssueItemsByProject(projectId: string): Promise<IssueItem[]> {
+    return Array.from(this.issueItems.values()).filter(
+      (item) => item.projectId === projectId
+    );
+  }
+
+  async getIssueItem(id: string): Promise<IssueItem | undefined> {
+    return this.issueItems.get(id);
+  }
+
+  async createIssueItem(itemData: InsertIssueItem): Promise<IssueItem> {
+    const id = randomUUID();
+    const item: IssueItem = {
+      ...itemData,
+      id,
+      severity: itemData.severity ?? "Medium",
+      progressStatus: itemData.progressStatus ?? "대기중",
+      photos: itemData.photos ?? [],
+      graphs: itemData.graphs ?? [],
+    };
+    this.issueItems.set(id, item);
+    return item;
+  }
+
+  async updateIssueItem(id: string, updates: Partial<IssueItem>): Promise<IssueItem | undefined> {
+    const item = this.issueItems.get(id);
+    if (!item) return undefined;
+    const updated = { ...item, ...updates };
+    this.issueItems.set(id, updated);
+    return updated;
+  }
+
+  async deleteIssueItem(id: string): Promise<boolean> {
+    return this.issueItems.delete(id);
   }
 }
 
