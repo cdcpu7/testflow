@@ -236,6 +236,7 @@ export class JsonStorage implements IStorage {
       reportStatus: itemData.reportStatus ?? "대기중",
       photos: itemData.photos ?? [],
       graphs: itemData.graphs ?? [],
+      lastModifiedDate: this.todayString(),
     };
     this.testItems.set(id, item);
     this.saveData();
@@ -246,7 +247,7 @@ export class JsonStorage implements IStorage {
   async updateTestItem(id: string, updates: Partial<TestItem>): Promise<TestItem | undefined> {
     const item = this.testItems.get(id);
     if (!item) return undefined;
-    const updated = { ...item, ...updates };
+    const updated = { ...item, ...updates, lastModifiedDate: this.todayString() };
     this.testItems.set(id, updated);
     this.saveData();
     await this.touchProject(item.projectId);
@@ -284,6 +285,7 @@ export class JsonStorage implements IStorage {
       progressStatus: itemData.progressStatus ?? "대기중",
       photos: itemData.photos ?? [],
       graphs: itemData.graphs ?? [],
+      lastModifiedDate: this.todayString(),
     };
     this.issueItems.set(id, item);
     this.saveData();
@@ -294,7 +296,7 @@ export class JsonStorage implements IStorage {
   async updateIssueItem(id: string, updates: Partial<IssueItem>): Promise<IssueItem | undefined> {
     const item = this.issueItems.get(id);
     if (!item) return undefined;
-    const updated = { ...item, ...updates };
+    const updated = { ...item, ...updates, lastModifiedDate: this.todayString() };
     this.issueItems.set(id, updated);
     this.saveData();
     await this.touchProject(item.projectId);

@@ -104,11 +104,7 @@ export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: P
             </div>
           )}
 
-          {project.lastUpdatedAt && (
-            <div className="text-xs text-muted-foreground" data-testid={`text-last-updated-${project.id}`}>
-              마지막 업데이트: {(project.lastUpdatedAt || "").replace(/-/g, ".")}
-            </div>
-          )}
+
         </div>
       </CardContent>
     </Card>

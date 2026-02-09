@@ -38,11 +38,6 @@ interface ProjectDetailProps {
   projectId: string;
 }
 
-function formatDateDisplay(iso: string | undefined): string {
-  if (!iso) return "";
-  const p = iso.split("-");
-  return p.length === 3 ? `${p[0]}.${p[1]}.${p[2]}` : iso;
-}
 
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [, setLocation] = useLocation();
@@ -394,16 +389,14 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      {/* Header */}
+      {/* Header - Row 1: 프로젝트명, 상태, 기간, 마지막 업데이트 */}
       <div className="space-y-3">
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="shrink-0" data-testid="button-back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl sm:text-2xl font-semibold truncate flex-1 min-w-0">{project.name}</h1>
-        </div>
+          <h1 className="text-xl sm:text-2xl font-semibold truncate min-w-0">{project.name}</h1>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pl-0 sm:pl-12">
           <Select value={project.status} onValueChange={(v) => updateProject.mutate({ status: v as any })}>
             <SelectTrigger className="w-auto" data-testid="select-project-status">
               <Badge variant="outline" className={getStatusColor(project.status)}>
@@ -417,15 +410,36 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             </SelectContent>
           </Select>
 
+          <div className="flex items-center gap-2 text-sm" data-testid="project-period">
+            <span className="text-muted-foreground">시작일</span>
+            <div className="w-40">
+              <DateInput
+                value={project.startDate || ""}
+                onChange={(val) => updateProject.mutate({ startDate: val })}
+                testId="input-project-start-date"
+              />
+            </div>
+            <span className="text-muted-foreground mx-1">~</span>
+            <span className="text-muted-foreground">종료일</span>
+            <div className="w-40">
+              <DateInput
+                value={project.endDate || ""}
+                onChange={(val) => updateProject.mutate({ endDate: val })}
+                testId="input-project-end-date"
+              />
+            </div>
+          </div>
+
           {project.lastUpdatedAt && (
-            <div className="text-sm text-muted-foreground" data-testid="text-last-updated">
+            <div className="text-sm text-muted-foreground whitespace-nowrap" data-testid="text-last-updated">
               마지막 업데이트: {(project.lastUpdatedAt || "").replace(/-/g, ".")}
             </div>
           )}
         </div>
 
+        {/* Row 2: 메모 (설명) */}
         <div className="pl-0 sm:pl-12">
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2">
             {isEditingDescription ? (
               <div className="flex items-center gap-2 flex-1">
                 <Input
@@ -453,31 +467,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                 <Pencil className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Project period - editable */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm pl-0 sm:pl-12" data-testid="project-period">
-          <div className="flex items-center gap-2 shrink-0">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-muted-foreground whitespace-nowrap">프로젝트 기간 :</span>
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-            <div className="w-full sm:w-44">
-              <DateInput
-                value={project.startDate || ""}
-                onChange={(val) => updateProject.mutate({ startDate: val })}
-                testId="input-project-start-date"
-              />
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">~</span>
-            <div className="w-full sm:w-44">
-              <DateInput
-                value={project.endDate || ""}
-                onChange={(val) => updateProject.mutate({ endDate: val })}
-                testId="input-project-end-date"
-              />
-            </div>
           </div>
         </div>
       </div>

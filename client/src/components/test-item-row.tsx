@@ -113,13 +113,10 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
       {isExpanded && (
         <div className="px-4 pb-4 pt-0 border-t border-border">
           <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
-              <Label className="text-[13px] text-muted-foreground whitespace-nowrap">최종 수정일</Label>
-              <DateInput
-                value={item.lastModifiedDate || ""}
-                onChange={(v) => onUpdate({ lastModifiedDate: v })}
-                testId={`input-last-modified-${item.id}`}
-              />
+            <div className="flex items-center gap-3 py-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                마지막 업데이트: {item.lastModifiedDate ? item.lastModifiedDate.replace(/-/g, ".") : "-"}
+              </span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

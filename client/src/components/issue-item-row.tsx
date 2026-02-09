@@ -98,11 +98,10 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
       {isExpanded && (
         <div className="px-4 pb-4 pt-0 border-t border-border">
           <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-6 p-3 rounded-md bg-muted/50 flex-wrap">
-              <div className="flex items-center gap-3">
-                <Label className="text-[13px] text-muted-foreground whitespace-nowrap">최종 수정일</Label>
-                <DateInput value={item.lastModifiedDate || ""} onChange={(v) => onUpdate({ lastModifiedDate: v })} testId={`input-issue-last-modified-${item.id}`} />
-              </div>
+            <div className="flex items-center gap-6 py-2 flex-wrap">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                마지막 업데이트: {item.lastModifiedDate ? item.lastModifiedDate.replace(/-/g, ".") : "-"}
+              </span>
               <div className="flex items-center gap-3">
                 <Label className="text-[13px] text-muted-foreground whitespace-nowrap">심각도</Label>
                 <Select value={item.severity} onValueChange={(v) => onUpdate({ severity: v as any })}>
