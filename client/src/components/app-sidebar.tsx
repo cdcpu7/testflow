@@ -32,7 +32,7 @@ interface AuthUser {
 const statusColors: Record<string, string> = {
   진행중: "bg-blue-500/20 text-blue-400",
   완료: "bg-green-500/20 text-green-400",
-  보류: "bg-yellow-500/20 text-yellow-400",
+  "프로젝트 중단": "bg-red-500/20 text-red-400",
 };
 
 export function AppSidebar({ onNewProject }: AppSidebarProps) {

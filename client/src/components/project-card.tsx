@@ -20,17 +20,17 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: ProjectCardProps) {
-  const completedTests = testItems.filter((t) => t.testCompleted).length;
+  const completedTests = testItems.filter((t) => t.progressStatus === "완료").length;
   const totalTests = testItems.length;
   const progress = totalTests > 0 ? (completedTests / totalTests) * 100 : 0;
-  const reportsCompleted = testItems.filter((t) => t.reportCompleted).length;
+  const reportsCompleted = testItems.filter((t) => t.reportStatus === "완료").length;
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "완료":
         return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-      case "보류":
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      case "프로젝트 중단":
+        return "bg-red-500/20 text-red-400 border-red-500/30";
       default:
         return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     }

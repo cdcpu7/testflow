@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestItemRow } from "@/components/test-item-row";
 import { IssueItemRow } from "@/components/issue-item-row";
 import { TestItemForm } from "@/components/test-item-form";
@@ -33,6 +34,12 @@ import type { Project, TestItem, IssueItem } from "@shared/schema";
 
 interface ProjectDetailProps {
   projectId: string;
+}
+
+function formatDateDisplay(iso: string | undefined): string {
+  if (!iso) return "";
+  const p = iso.split("-");
+  return p.length === 3 ? `${p[0]}.${p[1]}.${p[2]}` : iso;
 }
 
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
@@ -62,7 +69,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     queryKey: ["/api/projects", projectId, "issue-items"],
   });
 
-  // Test Items mutations
   const createTestItem = useMutation({
     mutationFn: async (data: { name: string }) => {
       const res = await apiRequest("POST", `/api/projects/${projectId}/test-items`, data);
@@ -138,7 +144,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     },
   });
 
-  // Issue Items mutations
   const createIssueItem = useMutation({
     mutationFn: async (data: { name: string }) => {
       const res = await apiRequest("POST", `/api/projects/${projectId}/issue-items`, data);
@@ -233,7 +238,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   });
 
   const updateProject = useMutation({
-    mutationFn: async (updates: { description?: string; scheduleDescription?: string; productSpecDescription?: string }) => {
+    mutationFn: async (updates: Partial<Project>) => {
       const res = await apiRequest("PATCH", `/api/projects/${projectId}`, updates);
       return res.json();
     },
@@ -254,9 +259,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-10 w-48" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-48 lg:col-span-2" />
-          <Skeleton className="h-48" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
         </div>
         <Skeleton className="h-64" />
       </div>
@@ -284,7 +291,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const reportsCompleted = testItems.filter((t) => t.reportStatus === "완료").length;
   const totalIssues = issueItems.length;
   const completedIssues = issueItems.filter((i) => i.progressStatus === "완료").length;
-  const progress = totalTests > 0 ? (completedTests / totalTests) * 100 : 0;
+
+  const testProgressPct = totalTests > 0 ? Math.round((completedTests / totalTests) * 100) : 0;
+  const issueImprovePct = totalIssues > 0 ? Math.round((completedIssues / totalIssues) * 100) : 0;
+  const reportPct = totalTests > 0 ? Math.round((reportsCompleted / totalTests) * 100) : 0;
+  const passPct = totalTests > 0 ? Math.round((okCount / totalTests) * 100) : 0;
 
   const filteredTestItems = resultFilter
     ? testItems.filter((t) => t.testResult === resultFilter)
@@ -294,8 +305,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     switch (status) {
       case "완료":
         return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-      case "보류":
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      case "프로젝트 중단":
+        return "bg-red-500/20 text-red-400 border-red-500/30";
       default:
         return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     }
@@ -316,16 +327,25 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           <Button variant="ghost" size="icon" onClick={() => setLocation("/")} data-testid="button-back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-semibold">{project.name}</h1>
-              <Badge variant="outline" className={getStatusColor(project.status)}>
-                {project.status}
-              </Badge>
+              <h1 className="text-2xl font-semibold truncate">{project.name}</h1>
+              <Select value={project.status} onValueChange={(v) => updateProject.mutate({ status: v as any })}>
+                <SelectTrigger className="w-auto" data-testid="select-project-status">
+                  <Badge variant="outline" className={getStatusColor(project.status)}>
+                    {project.status}
+                  </Badge>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="진행중">진행중</SelectItem>
+                  <SelectItem value="완료">완료</SelectItem>
+                  <SelectItem value="프로젝트 중단">프로젝트 중단</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-2 mt-1">
               {isEditingDescription ? (
@@ -358,32 +378,90 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             </div>
           </div>
         </div>
+
+        {/* Project period - editable */}
+        <div className="flex items-center gap-2 text-sm" data-testid="project-period">
+          <Calendar className="w-4 h-4 text-muted-foreground" />
+          <span className="text-muted-foreground">프로젝트 기간 :</span>
+          <Input
+            type="date"
+            value={project.startDate || ""}
+            onChange={(e) => updateProject.mutate({ startDate: e.target.value })}
+            className="w-36"
+            data-testid="input-project-start-date"
+          />
+          <span className="text-muted-foreground">~</span>
+          <Input
+            type="date"
+            value={project.endDate || ""}
+            onChange={(e) => updateProject.mutate({ endDate: e.target.value })}
+            className="w-36"
+            data-testid="input-project-end-date"
+          />
+        </div>
       </div>
 
-      {/* Summary & Attachments */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
-            <CardTitle className="text-lg font-medium">프로젝트 현황</CardTitle>
-            {project.startDate && (
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>{project.startDate}</span>
-                {project.endDate && <span>~ {project.endDate}</span>}
+      {/* Summary section: stats + result summary + attachments */}
+      <div className="space-y-6">
+        {/* 4 Metric Cards in 2x2 grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card data-testid="card-test-progress">
+            <CardContent className="p-4 space-y-3">
+              <span className="text-sm font-medium text-muted-foreground">시험 진행율</span>
+              <div className="text-lg font-semibold">
+                {completedTests} / {totalTests}
+                <span className="text-sm font-normal text-muted-foreground ml-2">({testProgressPct}%)</span>
               </div>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
+              <Progress value={testProgressPct} className="h-2" />
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-issue-improve">
+            <CardContent className="p-4 space-y-3">
+              <span className="text-sm font-medium text-muted-foreground">문제항목 개선율</span>
+              <div className="text-lg font-semibold">
+                {completedIssues} / {totalIssues}
+                <span className="text-sm font-normal text-muted-foreground ml-2">({issueImprovePct}%)</span>
+              </div>
+              <Progress value={issueImprovePct} className="h-2" />
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-report-rate">
+            <CardContent className="p-4 space-y-3">
+              <span className="text-sm font-medium text-muted-foreground">보고서 작성율</span>
+              <div className="text-lg font-semibold">
+                {reportsCompleted} / {totalTests}
+                <span className="text-sm font-normal text-muted-foreground ml-2">({reportPct}%)</span>
+              </div>
+              <Progress value={reportPct} className="h-2" />
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-pass-rate">
+            <CardContent className="p-4 space-y-3">
+              <span className="text-sm font-medium text-muted-foreground">시험 합격율</span>
+              <div className="text-lg font-semibold">
+                {okCount} / {totalTests}
+                <span className="text-sm font-normal text-muted-foreground ml-2">({passPct}%)</span>
+              </div>
+              <Progress value={passPct} className="h-2" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Result summary row + Attachments */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
+              <CardTitle className="text-lg font-medium">시험 결과 요약</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex items-center gap-6 flex-wrap text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">시험 진행:</span>
-                  <span className="font-medium">완료 {completedTests} / 전체 {totalTests}</span>
-                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">시험 결과:</span>
                   <span className="font-medium text-emerald-400">OK {okCount}</span>
-                  <span>/</span>
+                  <span className="text-muted-foreground">/</span>
                   <span
                     className={`font-medium cursor-pointer ${ngCount > 0 ? "text-red-400" : "text-muted-foreground"}`}
                     onClick={() => setResultFilter(resultFilter === "NG" ? null : "NG")}
@@ -391,24 +469,14 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   >
                     NG {ngCount}
                   </span>
-                  <span>/</span>
+                  <span className="text-muted-foreground">/</span>
                   <span
-                    className={`font-medium cursor-pointer ${tbdCount > 0 ? "text-amber-400" : "text-muted-foreground"}`}
+                    className={`font-medium cursor-pointer ${tbdCount > 0 ? "text-foreground" : "text-muted-foreground"}`}
                     onClick={() => setResultFilter(resultFilter === "TBD" ? null : "TBD")}
                     data-testid="filter-tbd"
                   >
                     TBD {tbdCount}
                   </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-6 flex-wrap text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">보고서:</span>
-                  <span className="font-medium">완료 {reportsCompleted} / 전체 {totalTests}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">문제:</span>
-                  <span className="font-medium">완료 {completedIssues} / 전체 {totalIssues}</span>
                 </div>
               </div>
               {resultFilter && (
@@ -422,112 +490,105 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   </Button>
                 </div>
               )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">전체 진행률</span>
-                <span className="font-medium">{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-3" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">첨부 자료</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4" />
-                  1. 일정
-                </span>
-                <Button size="sm" variant="ghost" onClick={() => handleImageUpload("schedule")} data-testid="button-upload-schedule-image">
-                  <Upload className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                {isEditingScheduleDesc ? (
-                  <div className="flex items-center gap-2 flex-1">
-                    <Input value={editedScheduleDesc} onChange={(e) => setEditedScheduleDesc(e.target.value)} placeholder="일정 설명 입력" className="flex-1 text-sm" data-testid="input-schedule-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ scheduleDescription: editedScheduleDesc }); if (e.key === "Escape") setIsEditingScheduleDesc(false); }} />
-                    <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ scheduleDescription: editedScheduleDesc })} disabled={updateProject.isPending} data-testid="button-save-schedule-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setIsEditingScheduleDesc(false)} data-testid="button-cancel-schedule-desc"><X className="w-4 h-4" /></Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedScheduleDesc(project.scheduleDescription || ""); setIsEditingScheduleDesc(true); }} data-testid="button-edit-schedule-desc">
-                    <p className="text-sm text-muted-foreground truncate">{project.scheduleDescription || "설명 추가..."}</p>
-                    <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                  </div>
-                )}
-              </div>
-              {project.scheduleImage ? (
-                <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.scheduleImage!)} data-testid="image-schedule">
-                  <img src={project.scheduleImage} alt="일정" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-              ) : (
-                <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("schedule")}>
-                  <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium flex items-center gap-1.5">
-                  <ImageIcon className="w-4 h-4" />
-                  2. 제품사양
-                </span>
-                <Button size="sm" variant="ghost" onClick={() => handleImageUpload("product")} data-testid="button-upload-product-image">
-                  <Upload className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                {isEditingProductSpecDesc ? (
-                  <div className="flex items-center gap-2 flex-1">
-                    <Input value={editedProductSpecDesc} onChange={(e) => setEditedProductSpecDesc(e.target.value)} placeholder="제품사양 설명 입력" className="flex-1 text-sm" data-testid="input-product-spec-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ productSpecDescription: editedProductSpecDesc }); if (e.key === "Escape") setIsEditingProductSpecDesc(false); }} />
-                    <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ productSpecDescription: editedProductSpecDesc })} disabled={updateProject.isPending} data-testid="button-save-product-spec-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setIsEditingProductSpecDesc(false)} data-testid="button-cancel-product-spec-desc"><X className="w-4 h-4" /></Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedProductSpecDesc(project.productSpecDescription || ""); setIsEditingProductSpecDesc(true); }} data-testid="button-edit-product-spec-desc">
-                    <p className="text-sm text-muted-foreground truncate">{project.productSpecDescription || "설명 추가..."}</p>
-                    <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                  </div>
-                )}
-              </div>
-              {project.productImage ? (
-                <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.productImage!)} data-testid="image-product">
-                  <img src={project.productImage} alt="제품사양" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-              ) : (
-                <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("product")}>
-                  <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
-                </div>
-              )}
-            </div>
-
-            {project.productSpec && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium">첨부 자료</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <FileText className="w-4 h-4" />
-                  제품 사양 텍스트
-                </span>
-                <div className="p-3 rounded-md bg-muted/50 cursor-pointer hover-elevate" onClick={() => setSpecViewerOpen(true)} data-testid="button-view-spec">
-                  <p className="text-sm line-clamp-3">{project.productSpec}</p>
-                  <span className="text-xs text-primary mt-2 block">클릭하여 전체 보기</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4" />
+                    1. 일정
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => handleImageUpload("schedule")} data-testid="button-upload-schedule-image">
+                    <Upload className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
+                <div className="flex items-center gap-2">
+                  {isEditingScheduleDesc ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input value={editedScheduleDesc} onChange={(e) => setEditedScheduleDesc(e.target.value)} placeholder="일정 설명 입력" className="flex-1 text-sm" data-testid="input-schedule-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ scheduleDescription: editedScheduleDesc }); if (e.key === "Escape") setIsEditingScheduleDesc(false); }} />
+                      <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ scheduleDescription: editedScheduleDesc })} disabled={updateProject.isPending} data-testid="button-save-schedule-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => setIsEditingScheduleDesc(false)} data-testid="button-cancel-schedule-desc"><X className="w-4 h-4" /></Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedScheduleDesc(project.scheduleDescription || ""); setIsEditingScheduleDesc(true); }} data-testid="button-edit-schedule-desc">
+                      <p className="text-sm text-muted-foreground truncate">{project.scheduleDescription || "설명 추가..."}</p>
+                      <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    </div>
+                  )}
+                </div>
+                {project.scheduleImage ? (
+                  <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.scheduleImage!)} data-testid="image-schedule">
+                    <img src={project.scheduleImage} alt="일정" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Maximize2 className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("schedule")}>
+                    <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
+                  </div>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4" />
+                    2. 제품사양
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => handleImageUpload("product")} data-testid="button-upload-product-image">
+                    <Upload className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isEditingProductSpecDesc ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input value={editedProductSpecDesc} onChange={(e) => setEditedProductSpecDesc(e.target.value)} placeholder="제품사양 설명 입력" className="flex-1 text-sm" data-testid="input-product-spec-description" autoFocus onKeyDown={(e) => { if (e.key === "Enter") updateProject.mutate({ productSpecDescription: editedProductSpecDesc }); if (e.key === "Escape") setIsEditingProductSpecDesc(false); }} />
+                      <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ productSpecDescription: editedProductSpecDesc })} disabled={updateProject.isPending} data-testid="button-save-product-spec-desc"><Check className="w-4 h-4 text-emerald-400" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => setIsEditingProductSpecDesc(false)} data-testid="button-cancel-product-spec-desc"><X className="w-4 h-4" /></Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 cursor-pointer group flex-1" onClick={() => { setEditedProductSpecDesc(project.productSpecDescription || ""); setIsEditingProductSpecDesc(true); }} data-testid="button-edit-product-spec-desc">
+                      <p className="text-sm text-muted-foreground truncate">{project.productSpecDescription || "설명 추가..."}</p>
+                      <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    </div>
+                  )}
+                </div>
+                {project.productImage ? (
+                  <div className="relative aspect-video rounded-md overflow-hidden cursor-pointer group" onClick={() => setSelectedImage(project.productImage!)} data-testid="image-product">
+                    <img src={project.productImage} alt="제품사양" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Maximize2 className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="aspect-video rounded-md bg-muted/50 flex items-center justify-center cursor-pointer hover-elevate" onClick={() => handleImageUpload("product")}>
+                    <span className="text-xs text-muted-foreground">클릭하여 업로드</span>
+                  </div>
+                )}
+              </div>
+
+              {project.productSpec && (
+                <div className="space-y-2">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" />
+                    제품 사양 텍스트
+                  </span>
+                  <div className="p-3 rounded-md bg-muted/50 cursor-pointer hover-elevate" onClick={() => setSpecViewerOpen(true)} data-testid="button-view-spec">
+                    <p className="text-sm line-clamp-3">{project.productSpec}</p>
+                    <span className="text-xs text-primary mt-2 block">클릭하여 전체 보기</span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Tabs for Test Items and Issue Items */}

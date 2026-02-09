@@ -33,7 +33,7 @@ export const projectSchema = z.object({
   productSpecDescription: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  status: z.enum(["진행중", "완료", "보류"]).default("진행중"),
+  status: z.enum(["진행중", "완료", "프로젝트 중단"]).default("진행중"),
 });
 
 export const insertProjectSchema = projectSchema.omit({ id: true });
