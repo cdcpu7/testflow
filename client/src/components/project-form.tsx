@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/date-input";
 
 interface ProjectFormProps {
   open: boolean;
@@ -112,7 +113,11 @@ export function ProjectForm({ open, onClose, onSubmit, project, isPending }: Pro
                   <FormItem>
                     <FormLabel>시작일</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} data-testid="input-start-date" />
+                      <DateInput
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        testId="input-start-date"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -126,7 +131,11 @@ export function ProjectForm({ open, onClose, onSubmit, project, isPending }: Pro
                   <FormItem>
                     <FormLabel>종료일</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} data-testid="input-end-date" />
+                      <DateInput
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        testId="input-end-date"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -2,64 +2,11 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Calendar, Upload, Trash2, Edit2, FlaskConical, BarChart3, Maximize2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateInput } from "@/components/date-input";
 import type { TestItem } from "@shared/schema";
-
-function DateInput({ value, onChange, disabled, testId }: {
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-  testId?: string;
-}) {
-  const [textValue, setTextValue] = useState(value ? formatDisplay(value) : "");
-
-  function formatDisplay(iso: string): string {
-    if (!iso) return "";
-    const p = iso.split("-");
-    return p.length === 3 ? `${p[0]}.${p[1]}.${p[2]}` : iso;
-  }
-
-  function parseToISO(input: string): string {
-    const cleaned = input.replace(/[^\d.]/g, "");
-    const p = cleaned.split(".");
-    if (p.length === 3 && p[0].length === 4 && p[1].length === 2 && p[2].length === 2) {
-      return `${p[0]}-${p[1]}-${p[2]}`;
-    }
-    return "";
-  }
-
-  return (
-    <div className="flex gap-1">
-      <Input
-        type="text"
-        placeholder="YYYY.MM.DD"
-        value={textValue}
-        onChange={(e) => {
-          setTextValue(e.target.value);
-          const iso = parseToISO(e.target.value);
-          if (iso) onChange(iso);
-        }}
-        disabled={disabled}
-        className="flex-1"
-        data-testid={testId ? `${testId}-text` : undefined}
-      />
-      <Input
-        type="date"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setTextValue(formatDisplay(e.target.value));
-        }}
-        disabled={disabled}
-        className="w-10 px-1"
-        data-testid={testId}
-      />
-    </div>
-  );
-}
 
 interface TestItemRowProps {
   item: TestItem;
