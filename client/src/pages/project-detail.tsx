@@ -651,13 +651,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
               <Download className="w-4 h-4 mr-2" />
               엑셀 내보내기
             </Button>
-            <div>
-              <input type="file" accept=".xlsx,.xls" onChange={handleExcelImport} className="hidden" ref={excelImportRef} data-testid="input-import-excel" />
-              <Button variant="outline" onClick={() => excelImportRef.current?.click()} disabled={importTestItems.isPending} data-testid="button-import-excel">
-                <Upload className="w-4 h-4 mr-2" />
-                {importTestItems.isPending ? "불러오는 중..." : "엑셀 불러오기"}
-              </Button>
-            </div>
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelImport} className="hidden" ref={excelImportRef} data-testid="input-import-excel" />
+            <Button variant="outline" onClick={() => { excelImportRef.current?.click(); }} disabled={importTestItems.isPending} data-testid="button-import-excel">
+              <Upload className="w-4 h-4 mr-2" />
+              {importTestItems.isPending ? "불러오는 중..." : "파일 불러오기"}
+            </Button>
             <Button onClick={() => setShowTestItemForm(true)} data-testid="button-add-test-item">
               <Plus className="w-4 h-4 mr-2" />
               시험항목추가

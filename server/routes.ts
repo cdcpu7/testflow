@@ -443,9 +443,20 @@ export async function registerRoutes(
       if (!req.file) {
         return res.status(400).json({ error: "파일이 업로드되지 않았습니다." });
       }
-      const wb = XLSX.readFile(req.file.path);
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      let data: any[][];
+
+      if (ext === ".csv") {
+        const csvContent = fs.readFileSync(req.file.path, "utf-8");
+        const wb = XLSX.read(csvContent, { type: "string", raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+      } else {
+        const wb = XLSX.readFile(req.file.path, { raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+      }
 
       if (data.length < 2) {
         fs.unlinkSync(req.file.path);
