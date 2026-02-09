@@ -291,7 +291,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "No file uploaded" });
       }
       const fileUrl = `/uploads/${req.file.filename}`;
-      const attachment = { url: fileUrl, filename: req.file.originalname, size: req.file.size };
+      const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+      const attachment = { url: fileUrl, filename: originalName, size: req.file.size };
       const attachments = [...(item.attachments || []), attachment];
       const updated = await storage.updateTestItem(req.params.id, { attachments });
       res.json(updated);
@@ -394,7 +395,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "No file uploaded" });
       }
       const fileUrl = `/uploads/${req.file.filename}`;
-      const attachment = { url: fileUrl, filename: req.file.originalname, size: req.file.size };
+      const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+      const attachment = { url: fileUrl, filename: originalName, size: req.file.size };
       const attachments = [...(item.attachments || []), attachment];
       const updated = await storage.updateIssueItem(req.params.id, { attachments });
       res.json(updated);
