@@ -34,6 +34,7 @@ export const projectSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   status: z.enum(["진행중", "완료", "프로젝트 중단"]).default("진행중"),
+  lastUpdatedAt: z.string().optional(),
 });
 
 export const insertProjectSchema = projectSchema.omit({ id: true });

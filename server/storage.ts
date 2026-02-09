@@ -87,9 +87,21 @@ export class MemStorage implements IStorage {
     return this.projects.get(id);
   }
 
+  private todayString(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  private async touchProject(projectId: string): Promise<void> {
+    const project = this.projects.get(projectId);
+    if (project) {
+      this.projects.set(projectId, { ...project, lastUpdatedAt: this.todayString() });
+    }
+  }
+
   async createProject(projectData: InsertProject): Promise<Project> {
     const id = randomUUID();
-    const project: Project = { ...projectData, id };
+    const project: Project = { ...projectData, id, lastUpdatedAt: this.todayString() };
     this.projects.set(id, project);
     return project;
   }
@@ -97,7 +109,7 @@ export class MemStorage implements IStorage {
   async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project | undefined> {
     const project = this.projects.get(id);
     if (!project) return undefined;
-    const updated = { ...project, ...updates };
+    const updated = { ...project, ...updates, lastUpdatedAt: this.todayString() };
     this.projects.set(id, updated);
     return updated;
   }
@@ -144,6 +156,7 @@ export class MemStorage implements IStorage {
       graphs: itemData.graphs ?? [],
     };
     this.testItems.set(id, item);
+    await this.touchProject(itemData.projectId);
     return item;
   }
 
@@ -152,11 +165,15 @@ export class MemStorage implements IStorage {
     if (!item) return undefined;
     const updated = { ...item, ...updates };
     this.testItems.set(id, updated);
+    await this.touchProject(item.projectId);
     return updated;
   }
 
   async deleteTestItem(id: string): Promise<boolean> {
-    return this.testItems.delete(id);
+    const item = this.testItems.get(id);
+    const deleted = this.testItems.delete(id);
+    if (item) await this.touchProject(item.projectId);
+    return deleted;
   }
 
   async getAllIssueItems(): Promise<IssueItem[]> {
@@ -184,6 +201,7 @@ export class MemStorage implements IStorage {
       graphs: itemData.graphs ?? [],
     };
     this.issueItems.set(id, item);
+    await this.touchProject(itemData.projectId);
     return item;
   }
 
@@ -192,11 +210,15 @@ export class MemStorage implements IStorage {
     if (!item) return undefined;
     const updated = { ...item, ...updates };
     this.issueItems.set(id, updated);
+    await this.touchProject(item.projectId);
     return updated;
   }
 
   async deleteIssueItem(id: string): Promise<boolean> {
-    return this.issueItems.delete(id);
+    const item = this.issueItems.get(id);
+    const deleted = this.issueItems.delete(id);
+    if (item) await this.touchProject(item.projectId);
+    return deleted;
   }
 }
 

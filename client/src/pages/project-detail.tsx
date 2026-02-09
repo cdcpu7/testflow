@@ -379,6 +379,12 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           </div>
         </div>
 
+        {project.lastUpdatedAt && (
+          <div className="text-sm text-muted-foreground text-right" data-testid="text-last-updated">
+            마지막 업데이트: {project.lastUpdatedAt}
+          </div>
+        )}
+
         {/* Project period - editable */}
         <div className="flex items-center gap-2 text-sm" data-testid="project-period">
           <Calendar className="w-4 h-4 text-muted-foreground" />
