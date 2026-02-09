@@ -43,6 +43,15 @@ export const insertProjectSchema = projectSchema.omit({ id: true, userId: true }
 export type Project = z.infer<typeof projectSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 
+// Attachment schema
+export const attachmentSchema = z.object({
+  url: z.string(),
+  filename: z.string(),
+  size: z.number().optional(),
+});
+
+export type Attachment = z.infer<typeof attachmentSchema>;
+
 // Test Item schema
 export const testItemSchema = z.object({
   id: z.string(),
@@ -61,6 +70,7 @@ export const testItemSchema = z.object({
   notes: z.string().optional(),
   photos: z.array(z.string()).default([]),
   graphs: z.array(z.string()).default([]),
+  attachments: z.array(attachmentSchema).default([]),
 });
 
 export const insertTestItemSchema = testItemSchema.omit({ id: true });
@@ -87,6 +97,7 @@ export const issueItemSchema = z.object({
   notes: z.string().optional(),
   photos: z.array(z.string()).default([]),
   graphs: z.array(z.string()).default([]),
+  attachments: z.array(attachmentSchema).default([]),
 });
 
 export const insertIssueItemSchema = issueItemSchema.omit({ id: true });

@@ -219,6 +219,40 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     },
   });
 
+  const uploadTestAttachment = useMutation({
+    mutationFn: async ({ itemId, file }: { itemId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/test-items/${itemId}/attachments`, { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) throw new Error("Upload failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "test-items"] });
+      toast({ title: "파일이 첨부되었습니다." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "오류", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const uploadIssueAttachment = useMutation({
+    mutationFn: async ({ itemId, file }: { itemId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/issue-items/${itemId}/attachments`, { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) throw new Error("Upload failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "issue-items"] });
+      toast({ title: "파일이 첨부되었습니다." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "오류", description: error.message, variant: "destructive" });
+    },
+  });
+
   const updateProjectImage = useMutation({
     mutationFn: async ({ type, file }: { type: "product" | "schedule"; file: File }) => {
       const formData = new FormData();
@@ -608,6 +642,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   onDelete={() => deleteTestItem.mutate(item.id)}
                   onPhotoUpload={(file) => uploadTestPhoto.mutate({ itemId: item.id, file })}
                   onGraphUpload={(file) => uploadTestGraph.mutate({ itemId: item.id, file })}
+                  onAttachmentUpload={(file) => uploadTestAttachment.mutate({ itemId: item.id, file })}
                   onPhotoClick={(url) => setSelectedImage(url)}
                 />
               ))}
@@ -644,6 +679,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   onDelete={() => deleteIssueItem.mutate(item.id)}
                   onPhotoUpload={(file) => uploadIssuePhoto.mutate({ itemId: item.id, file })}
                   onGraphUpload={(file) => uploadIssueGraph.mutate({ itemId: item.id, file })}
+                  onAttachmentUpload={(file) => uploadIssueAttachment.mutate({ itemId: item.id, file })}
                   onPhotoClick={(url) => setSelectedImage(url)}
                 />
               ))}

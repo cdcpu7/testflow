@@ -281,6 +281,25 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/test-items/:id/attachments", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      const item = await storage.getTestItem(req.params.id);
+      if (!item) {
+        return res.status(404).json({ error: "Test item not found" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      const fileUrl = `/uploads/${req.file.filename}`;
+      const attachment = { url: fileUrl, filename: req.file.originalname, size: req.file.size };
+      const attachments = [...(item.attachments || []), attachment];
+      const updated = await storage.updateTestItem(req.params.id, { attachments });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload attachment" });
+    }
+  });
+
   // Issue Items API
   app.get("/api/projects/:projectId/issue-items", requireAuth, async (req, res) => {
     try {
@@ -362,6 +381,25 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: "Failed to upload graph" });
+    }
+  });
+
+  app.post("/api/issue-items/:id/attachments", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      const item = await storage.getIssueItem(req.params.id);
+      if (!item) {
+        return res.status(404).json({ error: "Issue item not found" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      const fileUrl = `/uploads/${req.file.filename}`;
+      const attachment = { url: fileUrl, filename: req.file.originalname, size: req.file.size };
+      const attachments = [...(item.attachments || []), attachment];
+      const updated = await storage.updateIssueItem(req.params.id, { attachments });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload attachment" });
     }
   });
 
