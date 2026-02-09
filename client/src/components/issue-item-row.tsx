@@ -275,58 +275,58 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-3">
-              <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
-                <Paperclip className="w-4 h-4" />
-                11) 첨부파일
-              </h5>
-              <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
-                <input type="file" multiple onChange={handleAttachmentFile} className="hidden" id={`issue-attachment-upload-${item.id}`} data-testid={`input-issue-attachment-${item.id}`} />
-                <label htmlFor={`issue-attachment-upload-${item.id}`} className="cursor-pointer flex flex-col items-center gap-2">
-                  <Paperclip className="w-8 h-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">클릭하여 파일 첨부 (모든 파일)</span>
-                </label>
-              </div>
-              {item.attachments && item.attachments.length > 0 && (
-                <div className="space-y-1">
-                  {item.attachments.map((att, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 rounded-md bg-muted/50 group" data-testid={`issue-attachment-${item.id}-${idx}`}>
-                      <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <a
-                        href={att.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download={att.filename}
-                        className="flex-1 text-sm text-foreground truncate hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                        data-testid={`link-issue-attachment-${item.id}-${idx}`}
-                      >
-                        {att.filename}
-                      </a>
-                      {att.size && (
-                        <span className="text-xs text-muted-foreground shrink-0">{formatFileSize(att.size)}</span>
-                      )}
-                      <button
-                        className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm("이 파일을 삭제하시겠습니까?")) {
-                            const updated = [...(item.attachments || [])];
-                            updated.splice(idx, 1);
-                            onUpdate({ attachments: updated });
-                          }
-                        }}
-                        data-testid={`button-delete-issue-attachment-${item.id}-${idx}`}
-                      >
-                        <X className="w-3.5 h-3.5 text-destructive" />
-                      </button>
+                <div className="space-y-3">
+                  <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" />
+                    11) 첨부파일
+                  </h5>
+                  <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
+                    <input type="file" multiple onChange={handleAttachmentFile} className="hidden" id={`issue-attachment-upload-${item.id}`} data-testid={`input-issue-attachment-${item.id}`} />
+                    <label htmlFor={`issue-attachment-upload-${item.id}`} className="cursor-pointer flex flex-col items-center gap-2">
+                      <Paperclip className="w-8 h-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">클릭하여 파일 첨부 (모든 파일)</span>
+                    </label>
+                  </div>
+                  {item.attachments && item.attachments.length > 0 && (
+                    <div className="space-y-1">
+                      {item.attachments.map((att, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 rounded-md bg-muted/50 group" data-testid={`issue-attachment-${item.id}-${idx}`}>
+                          <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <a
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={att.filename}
+                            className="flex-1 text-sm text-foreground truncate hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`link-issue-attachment-${item.id}-${idx}`}
+                          >
+                            {att.filename}
+                          </a>
+                          {att.size && (
+                            <span className="text-xs text-muted-foreground shrink-0">{formatFileSize(att.size)}</span>
+                          )}
+                          <button
+                            className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("이 파일을 삭제하시겠습니까?")) {
+                                const updated = [...(item.attachments || [])];
+                                updated.splice(idx, 1);
+                                onUpdate({ attachments: updated });
+                              }
+                            }}
+                            data-testid={`button-delete-issue-attachment-${item.id}-${idx}`}
+                          >
+                            <X className="w-3.5 h-3.5 text-destructive" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
