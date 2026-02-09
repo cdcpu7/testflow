@@ -16,9 +16,10 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  getProjectsByUser(userId: string): Promise<Project[]>;
   getAllProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
-  createProject(project: InsertProject): Promise<Project>;
+  createProject(project: InsertProject, userId: string): Promise<Project>;
   updateProject(id: string, updates: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string): Promise<boolean>;
 
@@ -79,6 +80,10 @@ export class MemStorage implements IStorage {
     return user;
   }
 
+  async getProjectsByUser(userId: string): Promise<Project[]> {
+    return Array.from(this.projects.values()).filter((p) => p.userId === userId);
+  }
+
   async getAllProjects(): Promise<Project[]> {
     return Array.from(this.projects.values());
   }
@@ -99,9 +104,9 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async createProject(projectData: InsertProject): Promise<Project> {
+  async createProject(projectData: InsertProject, userId: string): Promise<Project> {
     const id = randomUUID();
-    const project: Project = { ...projectData, id, lastUpdatedAt: this.todayString() };
+    const project: Project = { ...projectData, id, userId, lastUpdatedAt: this.todayString() };
     this.projects.set(id, project);
     return project;
   }

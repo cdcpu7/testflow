@@ -111,7 +111,7 @@ export async function registerRoutes(
   // Projects API
   app.get("/api/projects", requireAuth, async (req, res) => {
     try {
-      const projects = await storage.getAllProjects();
+      const projects = await storage.getProjectsByUser(req.session.userId!);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch projects" });
@@ -136,7 +136,7 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.message });
       }
-      const project = await storage.createProject(parsed.data);
+      const project = await storage.createProject(parsed.data, req.session.userId!);
       res.status(201).json(project);
     } catch (error) {
       res.status(500).json({ error: "Failed to create project" });

@@ -24,6 +24,7 @@ export type User = typeof users.$inferSelect;
 // Project schema
 export const projectSchema = z.object({
   id: z.string(),
+  userId: z.string(),
   name: z.string().min(1, "프로젝트명을 입력하세요"),
   description: z.string().optional(),
   productSpec: z.string().optional(),
@@ -37,7 +38,7 @@ export const projectSchema = z.object({
   lastUpdatedAt: z.string().optional(),
 });
 
-export const insertProjectSchema = projectSchema.omit({ id: true });
+export const insertProjectSchema = projectSchema.omit({ id: true, userId: true });
 
 export type Project = z.infer<typeof projectSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
