@@ -10,6 +10,38 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
+import fs from "fs";
+import path from "path";
+
+const DATA_DIR = path.join(process.cwd(), "data");
+
+// Ensure data directory exists
+function ensureDataDir(): void {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+
+// Generic JSON file operations
+function readJsonFile<T>(filename: string, defaultValue: T): T {
+  ensureDataDir();
+  const filePath = path.join(DATA_DIR, filename);
+  if (!fs.existsSync(filePath)) {
+    return defaultValue;
+  }
+  try {
+    const content = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(content) as T;
+  } catch {
+    return defaultValue;
+  }
+}
+
+function writeJsonFile<T>(filename: string, data: T): void {
+  ensureDataDir();
+  const filePath = path.join(DATA_DIR, filename);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+}
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -38,21 +70,59 @@ export interface IStorage {
   deleteIssueItem(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
+interface StorageData {
+  users: Record<string, User>;
+  projects: Record<string, Project>;
+  testItems: Record<string, TestItem>;
+  issueItems: Record<string, IssueItem>;
+}
+
+export class JsonStorage implements IStorage {
   private users: Map<string, User>;
   private projects: Map<string, Project>;
   private testItems: Map<string, TestItem>;
   private issueItems: Map<string, IssueItem>;
+  private initialized: boolean = false;
 
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.testItems = new Map();
     this.issueItems = new Map();
-    this.initDefaultUser();
+    this.loadData();
   }
 
-  private async initDefaultUser() {
+  private loadData(): void {
+    const data = readJsonFile<StorageData>("storage.json", {
+      users: {},
+      projects: {},
+      testItems: {},
+      issueItems: {},
+    });
+
+    this.users = new Map(Object.entries(data.users));
+    this.projects = new Map(Object.entries(data.projects));
+    this.testItems = new Map(Object.entries(data.testItems));
+    this.issueItems = new Map(Object.entries(data.issueItems));
+
+    // Create default user if no users exist
+    if (this.users.size === 0) {
+      this.initDefaultUser();
+    }
+    this.initialized = true;
+  }
+
+  private saveData(): void {
+    const data: StorageData = {
+      users: Object.fromEntries(this.users),
+      projects: Object.fromEntries(this.projects),
+      testItems: Object.fromEntries(this.testItems),
+      issueItems: Object.fromEntries(this.issueItems),
+    };
+    writeJsonFile("storage.json", data);
+  }
+
+  private async initDefaultUser(): Promise<void> {
     const hashedPassword = await bcrypt.hash("1234", 10);
     const defaultUser: User = {
       id: randomUUID(),
@@ -61,6 +131,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     this.users.set(defaultUser.id, defaultUser);
+    this.saveData();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -77,6 +148,7 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const user: User = { ...insertUser, id, createdAt: new Date() };
     this.users.set(id, user);
+    this.saveData();
     return user;
   }
 
@@ -101,6 +173,7 @@ export class MemStorage implements IStorage {
     const project = this.projects.get(projectId);
     if (project) {
       this.projects.set(projectId, { ...project, lastUpdatedAt: this.todayString() });
+      this.saveData();
     }
   }
 
@@ -108,6 +181,7 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const project: Project = { ...projectData, id, userId, lastUpdatedAt: this.todayString() };
     this.projects.set(id, project);
+    this.saveData();
     return project;
   }
 
@@ -116,6 +190,7 @@ export class MemStorage implements IStorage {
     if (!project) return undefined;
     const updated = { ...project, ...updates, lastUpdatedAt: this.todayString() };
     this.projects.set(id, updated);
+    this.saveData();
     return updated;
   }
 
@@ -132,7 +207,9 @@ export class MemStorage implements IStorage {
     for (const issue of issues) {
       this.issueItems.delete(issue.id);
     }
-    return this.projects.delete(id);
+    const deleted = this.projects.delete(id);
+    this.saveData();
+    return deleted;
   }
 
   async getAllTestItems(): Promise<TestItem[]> {
@@ -161,6 +238,7 @@ export class MemStorage implements IStorage {
       graphs: itemData.graphs ?? [],
     };
     this.testItems.set(id, item);
+    this.saveData();
     await this.touchProject(itemData.projectId);
     return item;
   }
@@ -170,6 +248,7 @@ export class MemStorage implements IStorage {
     if (!item) return undefined;
     const updated = { ...item, ...updates };
     this.testItems.set(id, updated);
+    this.saveData();
     await this.touchProject(item.projectId);
     return updated;
   }
@@ -177,6 +256,7 @@ export class MemStorage implements IStorage {
   async deleteTestItem(id: string): Promise<boolean> {
     const item = this.testItems.get(id);
     const deleted = this.testItems.delete(id);
+    this.saveData();
     if (item) await this.touchProject(item.projectId);
     return deleted;
   }
@@ -206,6 +286,7 @@ export class MemStorage implements IStorage {
       graphs: itemData.graphs ?? [],
     };
     this.issueItems.set(id, item);
+    this.saveData();
     await this.touchProject(itemData.projectId);
     return item;
   }
@@ -215,6 +296,7 @@ export class MemStorage implements IStorage {
     if (!item) return undefined;
     const updated = { ...item, ...updates };
     this.issueItems.set(id, updated);
+    this.saveData();
     await this.touchProject(item.projectId);
     return updated;
   }
@@ -222,9 +304,10 @@ export class MemStorage implements IStorage {
   async deleteIssueItem(id: string): Promise<boolean> {
     const item = this.issueItems.get(id);
     const deleted = this.issueItems.delete(id);
+    this.saveData();
     if (item) await this.touchProject(item.projectId);
     return deleted;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new JsonStorage();

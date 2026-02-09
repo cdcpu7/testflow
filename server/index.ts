@@ -1,8 +1,19 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import FileStore from "session-file-store";
+import path from "path";
+import fs from "fs";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+
+// Ensure session directory exists
+const SESSION_DIR = path.join(process.cwd(), "data", "sessions");
+if (!fs.existsSync(SESSION_DIR)) {
+  fs.mkdirSync(SESSION_DIR, { recursive: true });
+}
+
+const FileStoreSession = FileStore(session);
 
 const app = express();
 const httpServer = createServer(app);
@@ -31,11 +42,16 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use(
   session({
+    store: new FileStoreSession({
+      path: SESSION_DIR,
+      ttl: 7 * 24 * 60 * 60, // 7 days in seconds
+      retries: 0,
+    }),
     secret: process.env.SESSION_SECRET || "test-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       httpOnly: true,
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,

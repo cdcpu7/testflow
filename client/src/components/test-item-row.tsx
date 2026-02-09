@@ -179,7 +179,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground font-semibold text-[15px]">5. 시험 결과</Label>
+                    <Label className="text-[15px] font-semibold">5. 시험 결과</Label>
                     <Select value={item.testResult || ""} onValueChange={(v) => onUpdate({ testResult: v as any })}>
                       <SelectTrigger data-testid={`select-test-result-${item.id}`}>
                         <SelectValue placeholder="선택" />
@@ -192,7 +192,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-muted-foreground">6. 진행 상태</Label>
+                    <Label className="text-[15px] font-semibold">6. 진행 상태</Label>
                     <Select value={item.progressStatus} onValueChange={(v) => onUpdate({ progressStatus: v as any })}>
                       <SelectTrigger data-testid={`select-progress-${item.id}`}>
                         <SelectValue />
@@ -205,7 +205,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-muted-foreground">7. 보고서</Label>
+                    <Label className="text-[15px] font-semibold">7. 보고서</Label>
                     <Select value={item.reportStatus} onValueChange={(v) => onUpdate({ reportStatus: v as any })}>
                       <SelectTrigger data-testid={`select-report-${item.id}`}>
                         <SelectValue />

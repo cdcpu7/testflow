@@ -175,7 +175,7 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[13px] text-muted-foreground">7. 진행 상태</Label>
+                  <Label className="text-[15px] font-semibold">7. 진행 상태</Label>
                   <Select value={item.progressStatus} onValueChange={(v) => onUpdate({ progressStatus: v as any })}>
                     <SelectTrigger data-testid={`select-issue-progress-${item.id}`}>
                       <SelectValue />
