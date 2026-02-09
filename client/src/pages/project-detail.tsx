@@ -393,85 +393,91 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} data-testid="button-back">
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="shrink-0" data-testid="button-back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-semibold truncate">{project.name}</h1>
-              <Select value={project.status} onValueChange={(v) => updateProject.mutate({ status: v as any })}>
-                <SelectTrigger className="w-auto" data-testid="select-project-status">
-                  <Badge variant="outline" className={getStatusColor(project.status)}>
-                    {project.status}
-                  </Badge>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="진행중">진행중</SelectItem>
-                  <SelectItem value="완료">완료</SelectItem>
-                  <SelectItem value="프로젝트 중단">프로젝트 중단</SelectItem>
-                </SelectContent>
-              </Select>
+          <h1 className="text-xl sm:text-2xl font-semibold truncate flex-1 min-w-0">{project.name}</h1>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pl-0 sm:pl-12">
+          <Select value={project.status} onValueChange={(v) => updateProject.mutate({ status: v as any })}>
+            <SelectTrigger className="w-auto" data-testid="select-project-status">
+              <Badge variant="outline" className={getStatusColor(project.status)}>
+                {project.status}
+              </Badge>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="진행중">진행중</SelectItem>
+              <SelectItem value="완료">완료</SelectItem>
+              <SelectItem value="프로젝트 중단">프로젝트 중단</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {project.lastUpdatedAt && (
+            <div className="text-sm text-muted-foreground" data-testid="text-last-updated">
+              마지막 업데이트: {(project.lastUpdatedAt || "").replace(/-/g, ".")}
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              {isEditingDescription ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <Input
-                    value={editedDescription}
-                    onChange={(e) => setEditedDescription(e.target.value)}
-                    placeholder="프로젝트 설명을 입력하세요"
-                    className="flex-1"
-                    data-testid="input-edit-description"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") updateProject.mutate({ description: editedDescription });
-                      if (e.key === "Escape") setIsEditingDescription(false);
-                    }}
-                  />
-                  <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ description: editedDescription })} disabled={updateProject.isPending} data-testid="button-save-description">
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => setIsEditingDescription(false)} data-testid="button-cancel-description">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 cursor-pointer group" onClick={() => { setEditedDescription(project.description || ""); setIsEditingDescription(true); }} data-testid="button-edit-description">
-                  <p className="text-muted-foreground">{project.description || "설명 추가..."}</p>
-                  <Pencil className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              )}
-            </div>
+          )}
+        </div>
+
+        <div className="pl-0 sm:pl-12">
+          <div className="flex items-center gap-2 mt-1">
+            {isEditingDescription ? (
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  placeholder="프로젝트 설명을 입력하세요"
+                  className="flex-1"
+                  data-testid="input-edit-description"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") updateProject.mutate({ description: editedDescription });
+                    if (e.key === "Escape") setIsEditingDescription(false);
+                  }}
+                />
+                <Button size="icon" variant="ghost" onClick={() => updateProject.mutate({ description: editedDescription })} disabled={updateProject.isPending} data-testid="button-save-description">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => setIsEditingDescription(false)} data-testid="button-cancel-description">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 cursor-pointer group" onClick={() => { setEditedDescription(project.description || ""); setIsEditingDescription(true); }} data-testid="button-edit-description">
+                <p className="text-muted-foreground">{project.description || "설명 추가..."}</p>
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            )}
           </div>
         </div>
 
-        {project.lastUpdatedAt && (
-          <div className="text-sm text-muted-foreground text-right" data-testid="text-last-updated">
-            마지막 업데이트: {(project.lastUpdatedAt || "").replace(/-/g, ".")}
-          </div>
-        )}
-
         {/* Project period - editable */}
-        <div className="flex items-center gap-2 text-sm" data-testid="project-period">
-          <Calendar className="w-4 h-4 text-muted-foreground" />
-          <span className="text-muted-foreground">프로젝트 기간 :</span>
-          <div className="w-44">
-            <DateInput
-              value={project.startDate || ""}
-              onChange={(val) => updateProject.mutate({ startDate: val })}
-              testId="input-project-start-date"
-            />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm pl-0 sm:pl-12" data-testid="project-period">
+          <div className="flex items-center gap-2 shrink-0">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground whitespace-nowrap">프로젝트 기간 :</span>
           </div>
-          <span className="text-muted-foreground">~</span>
-          <div className="w-44">
-            <DateInput
-              value={project.endDate || ""}
-              onChange={(val) => updateProject.mutate({ endDate: val })}
-              testId="input-project-end-date"
-            />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+            <div className="w-full sm:w-44">
+              <DateInput
+                value={project.startDate || ""}
+                onChange={(val) => updateProject.mutate({ startDate: val })}
+                testId="input-project-start-date"
+              />
+            </div>
+            <span className="text-muted-foreground hidden sm:inline">~</span>
+            <div className="w-full sm:w-44">
+              <DateInput
+                value={project.endDate || ""}
+                onChange={(val) => updateProject.mutate({ endDate: val })}
+                testId="input-project-end-date"
+              />
+            </div>
           </div>
         </div>
       </div>
