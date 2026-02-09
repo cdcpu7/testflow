@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { DateInput } from "@/components/date-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -415,7 +416,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
         {project.lastUpdatedAt && (
           <div className="text-sm text-muted-foreground text-right" data-testid="text-last-updated">
-            마지막 업데이트: {project.lastUpdatedAt}
+            마지막 업데이트: {(project.lastUpdatedAt || "").replace(/-/g, ".")}
           </div>
         )}
 
@@ -423,21 +424,21 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         <div className="flex items-center gap-2 text-sm" data-testid="project-period">
           <Calendar className="w-4 h-4 text-muted-foreground" />
           <span className="text-muted-foreground">프로젝트 기간 :</span>
-          <Input
-            type="date"
-            value={project.startDate || ""}
-            onChange={(e) => updateProject.mutate({ startDate: e.target.value })}
-            className="w-36"
-            data-testid="input-project-start-date"
-          />
+          <div className="w-44">
+            <DateInput
+              value={project.startDate || ""}
+              onChange={(val) => updateProject.mutate({ startDate: val })}
+              testId="input-project-start-date"
+            />
+          </div>
           <span className="text-muted-foreground">~</span>
-          <Input
-            type="date"
-            value={project.endDate || ""}
-            onChange={(e) => updateProject.mutate({ endDate: e.target.value })}
-            className="w-36"
-            data-testid="input-project-end-date"
-          />
+          <div className="w-44">
+            <DateInput
+              value={project.endDate || ""}
+              onChange={(val) => updateProject.mutate({ endDate: val })}
+              testId="input-project-end-date"
+            />
+          </div>
         </div>
       </div>
 

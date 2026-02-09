@@ -99,14 +99,14 @@ export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: P
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Calendar className="w-3.5 h-3.5 shrink-0" />
               <span data-testid={`text-period-${project.id}`}>
-                {project.startDate || "—"} ~ {project.endDate || "—"}
+                {(project.startDate || "—").replace(/-/g, ".")} ~ {(project.endDate || "—").replace(/-/g, ".")}
               </span>
             </div>
           )}
 
           {project.lastUpdatedAt && (
             <div className="text-xs text-muted-foreground" data-testid={`text-last-updated-${project.id}`}>
-              마지막 업데이트: {project.lastUpdatedAt}
+              마지막 업데이트: {(project.lastUpdatedAt || "").replace(/-/g, ".")}
             </div>
           )}
         </div>
