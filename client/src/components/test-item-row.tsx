@@ -180,7 +180,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-muted-foreground">5. 시험 결과</Label>
+                    <Label className="text-muted-foreground font-semibold text-[15px]">5. 시험 결과</Label>
                     <Select value={item.testResult || ""} onValueChange={(v) => onUpdate({ testResult: v as any })}>
                       <SelectTrigger data-testid={`select-test-result-${item.id}`}>
                         <SelectValue placeholder="선택" />
