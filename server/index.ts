@@ -42,16 +42,11 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use(
   session({
-    store: new FileStoreSession({
-      path: SESSION_DIR,
-      ttl: 7 * 24 * 60 * 60, // 7 days in seconds
-      retries: 0,
-    }),
     secret: process.env.SESSION_SECRET || "test-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true,
+      secure: false,
       httpOnly: true,
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
