@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { ChevronDown, ChevronRight, Calendar, Upload, Trash2, X, BarChart3, Maximize2, AlertTriangle, Paperclip, FileIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInput } from "@/components/date-input";
+import { DebouncedTextarea } from "@/components/debounced-textarea";
 import type { IssueItem, TestItem } from "@shared/schema";
 
 interface IssueItemRowProps {
   item: IssueItem;
   testItems: TestItem[];
-  onUpdate: (updates: Partial<IssueItem>) => void;
+  onUpdate: (updates: Partial<IssueItem>) => Promise<any> | void;
   onDelete: () => void;
   onPhotoUpload: (file: File) => void;
   onGraphUpload: (file: File) => void;
@@ -26,7 +26,7 @@ function formatFileSize(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function IssueItemRow({ item, testItems, onUpdate, onDelete, onPhotoUpload, onGraphUpload, onAttachmentUpload, onPhotoClick }: IssueItemRowProps) {
+export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpdate, onDelete, onPhotoUpload, onGraphUpload, onAttachmentUpload, onPhotoClick }: IssueItemRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getSeverityBadge = () => {
@@ -157,22 +157,22 @@ export function IssueItemRow({ item, testItems, onUpdate, onDelete, onPhotoUploa
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">3) 문제 내용</Label>
-                  <Textarea placeholder="문제 내용을 입력하세요" value={item.issueContent || ""} onChange={(e) => onUpdate({ issueContent: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-content-${item.id}`} />
+                  <DebouncedTextarea placeholder="문제 내용을 입력하세요" value={item.issueContent || ""} onSave={(v) => onUpdate({ issueContent: v })} rows={2} data-testid={`input-issue-content-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">4) 문제 원인</Label>
-                  <Textarea placeholder="문제 원인을 입력하세요" value={item.issueCause || ""} onChange={(e) => onUpdate({ issueCause: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-cause-${item.id}`} />
+                  <DebouncedTextarea placeholder="문제 원인을 입력하세요" value={item.issueCause || ""} onSave={(v) => onUpdate({ issueCause: v })} rows={2} data-testid={`input-issue-cause-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">5) 문제 대책</Label>
-                  <Textarea placeholder="문제 대책을 입력하세요" value={item.issueCountermeasure || ""} onChange={(e) => onUpdate({ issueCountermeasure: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-countermeasure-${item.id}`} />
+                  <DebouncedTextarea placeholder="문제 대책을 입력하세요" value={item.issueCountermeasure || ""} onSave={(v) => onUpdate({ issueCountermeasure: v })} rows={2} data-testid={`input-issue-countermeasure-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">6) 대책 검증 결과</Label>
-                  <Textarea placeholder="대책 검증 결과를 입력하세요" value={item.verificationResult || ""} onChange={(e) => onUpdate({ verificationResult: e.target.value })} className="resize-none" rows={2} data-testid={`input-verification-result-${item.id}`} />
+                  <DebouncedTextarea placeholder="대책 검증 결과를 입력하세요" value={item.verificationResult || ""} onSave={(v) => onUpdate({ verificationResult: v })} rows={2} data-testid={`input-verification-result-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
@@ -191,7 +191,7 @@ export function IssueItemRow({ item, testItems, onUpdate, onDelete, onPhotoUploa
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">8) 메모</Label>
-                  <Textarea placeholder="메모를 입력하세요" value={item.notes || ""} onChange={(e) => onUpdate({ notes: e.target.value })} className="resize-none" rows={2} data-testid={`input-issue-notes-${item.id}`} />
+                  <DebouncedTextarea placeholder="메모를 입력하세요" value={item.notes || ""} onSave={(v) => onUpdate({ notes: v })} rows={2} data-testid={`input-issue-notes-${item.id}`} />
                 </div>
               </div>
 
@@ -340,4 +340,4 @@ export function IssueItemRow({ item, testItems, onUpdate, onDelete, onPhotoUploa
       )}
     </div>
   );
-}
+});

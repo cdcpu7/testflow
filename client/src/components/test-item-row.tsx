@@ -1,16 +1,16 @@
-import { useState, useRef } from "react";
+import { useState, useRef, memo } from "react";
 import { ChevronDown, ChevronRight, Calendar, Upload, Trash2, X, Edit2, FlaskConical, BarChart3, Maximize2, Paperclip, FileIcon, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInput } from "@/components/date-input";
+import { DebouncedTextarea } from "@/components/debounced-textarea";
 import type { TestItem } from "@shared/schema";
 
 interface TestItemRowProps {
   item: TestItem;
-  onUpdate: (updates: Partial<TestItem>) => void;
+  onUpdate: (updates: Partial<TestItem>) => Promise<any> | void;
   onDelete: () => void;
   onPhotoUpload: (file: File) => void;
   onGraphUpload: (file: File) => void;
@@ -25,7 +25,7 @@ function formatFileSize(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUpload, onAttachmentUpload, onPhotoClick }: TestItemRowProps) {
+export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUpload, onAttachmentUpload, onPhotoClick }: TestItemRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getProgressBadge = () => {
@@ -148,11 +148,10 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUp
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2">2) 시험 조건</Label>
-                  <Textarea
+                  <DebouncedTextarea
                     placeholder="시험 조건을 입력하세요"
                     value={item.testCondition || ""}
-                    onChange={(e) => onUpdate({ testCondition: e.target.value })}
-                    className="resize-none"
+                    onSave={(v) => onUpdate({ testCondition: v })}
                     rows={2}
                     data-testid={`input-test-condition-${item.id}`}
                   />
@@ -160,11 +159,10 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUp
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2">3) 판정 기준</Label>
-                  <Textarea
+                  <DebouncedTextarea
                     placeholder="판정 기준을 입력하세요"
                     value={item.judgmentCriteria || ""}
-                    onChange={(e) => onUpdate({ judgmentCriteria: e.target.value })}
-                    className="resize-none"
+                    onSave={(v) => onUpdate({ judgmentCriteria: v })}
                     rows={2}
                     data-testid={`input-judgment-criteria-${item.id}`}
                   />
@@ -172,11 +170,10 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUp
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2">4) 시험 데이터</Label>
-                  <Textarea
+                  <DebouncedTextarea
                     placeholder="시험 데이터를 입력하세요"
                     value={item.testData || ""}
-                    onChange={(e) => onUpdate({ testData: e.target.value })}
-                    className="resize-none"
+                    onSave={(v) => onUpdate({ testData: v })}
                     rows={2}
                     data-testid={`input-test-data-${item.id}`}
                   />
@@ -226,11 +223,10 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUp
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2">8) 메모</Label>
-                  <Textarea
+                  <DebouncedTextarea
                     placeholder="메모를 입력하세요"
                     value={item.notes || ""}
-                    onChange={(e) => onUpdate({ notes: e.target.value })}
-                    className="resize-none"
+                    onSave={(v) => onUpdate({ notes: v })}
                     rows={2}
                     data-testid={`input-notes-${item.id}`}
                   />
@@ -382,4 +378,4 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUp
       )}
     </div>
   );
-}
+});

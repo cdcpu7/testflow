@@ -638,7 +638,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                 <TestItemRow
                   key={item.id}
                   item={item}
-                  onUpdate={(updates) => updateTestItem.mutate({ id: item.id, updates })}
+                  onUpdate={(updates) => updateTestItem.mutateAsync({ id: item.id, updates })}
                   onDelete={() => deleteTestItem.mutate(item.id)}
                   onPhotoUpload={(file) => uploadTestPhoto.mutate({ itemId: item.id, file })}
                   onGraphUpload={(file) => uploadTestGraph.mutate({ itemId: item.id, file })}
@@ -675,7 +675,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   key={item.id}
                   item={item}
                   testItems={testItems}
-                  onUpdate={(updates) => updateIssueItem.mutate({ id: item.id, updates })}
+                  onUpdate={(updates) => updateIssueItem.mutateAsync({ id: item.id, updates })}
                   onDelete={() => deleteIssueItem.mutate(item.id)}
                   onPhotoUpload={(file) => uploadIssuePhoto.mutate({ itemId: item.id, file })}
                   onGraphUpload={(file) => uploadIssueGraph.mutate({ itemId: item.id, file })}
