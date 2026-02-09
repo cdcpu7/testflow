@@ -409,9 +409,9 @@ export async function registerRoutes(
   app.get("/api/projects/:projectId/test-items/export", requireAuth, async (req, res) => {
     try {
       const items = await storage.getTestItemsByProject(req.params.projectId);
-      const headers = ["No", "시작일", "완료예정일", "실제완료일", "시험 조건", "판정 기준", "시험 데이터", "시험 결과", "진행 상태", "보고서 상태", "메모"];
-      const rows = items.map((item, idx) => [
-        idx + 1,
+      const headers = ["시험항목명", "시작일", "완료예정일", "실제완료일", "시험 조건", "판정 기준", "시험 데이터", "시험 결과", "진행 상태", "보고서 상태", "메모"];
+      const rows = items.map((item) => [
+        item.name || "",
         item.plannedStartDate || "",
         item.plannedEndDate || "",
         item.actualEndDate || "",
@@ -425,7 +425,7 @@ export async function registerRoutes(
       ]);
 
       const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      const colWidths = [6, 14, 14, 14, 30, 30, 30, 12, 12, 12, 30];
+      const colWidths = [20, 14, 14, 14, 30, 30, 30, 12, 12, 12, 30];
       ws["!cols"] = colWidths.map((w) => ({ wch: w }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "시험항목");
@@ -490,7 +490,7 @@ export async function registerRoutes(
 
         items.push({
           projectId: req.params.projectId,
-          name: `시험항목 ${String(row[0] ?? (i))}`,
+          name: String(row[0] ?? "").trim() || `시험항목 ${i}`,
           plannedStartDate: String(row[1] ?? "").trim(),
           plannedEndDate: String(row[2] ?? "").trim(),
           actualEndDate: String(row[3] ?? "").trim(),
@@ -517,13 +517,9 @@ export async function registerRoutes(
         return res.status(400).json({ error: "유효한 데이터 행이 없습니다." });
       }
 
-      const existingItems = await storage.getTestItemsByProject(req.params.projectId);
-      const startNum = existingItems.length + 1;
-
       const created: any[] = [];
       for (let idx = 0; idx < items.length; idx++) {
-        const item = { ...items[idx], name: `시험항목 ${startNum + idx}` };
-        const result = await storage.createTestItem(item);
+        const result = await storage.createTestItem(items[idx]);
         created.push(result);
       }
 
