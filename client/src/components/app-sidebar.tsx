@@ -53,7 +53,8 @@ export function AppSidebar({ onNewProject }: AppSidebarProps) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.invalidateQueries();
     },
   });
 
