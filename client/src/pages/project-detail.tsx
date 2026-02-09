@@ -406,12 +406,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         <div>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
-              <CardTitle className="text-lg font-medium">시험 결과 요약</CardTitle>
+              <CardTitle className="text-lg font-medium">프로젝트 현황</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-6 flex-wrap text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">시험 결과:</span>
                   <span className="font-medium text-emerald-400">OK {okCount}</span>
                   <span className="text-muted-foreground">/</span>
                   <span
@@ -429,6 +428,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   >
                     TBD {tbdCount}
                   </span>
+                  <span className="text-muted-foreground" data-testid="text-total-tests">(총 {totalTests})</span>
                 </div>
               </div>
               {resultFilter && (
