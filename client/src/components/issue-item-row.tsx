@@ -121,9 +121,8 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    1) 일정 관리
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    1. 일정 관리
                   </h5>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1.5">
@@ -142,7 +141,7 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold">2) 연관 시험 항목</Label>
+                  <Label className="text-[15px] font-semibold">2. 연관 시험 항목</Label>
                   <Select value={item.relatedTestItemId || ""} onValueChange={(v) => onUpdate({ relatedTestItemId: v })}>
                     <SelectTrigger data-testid={`select-related-test-${item.id}`}>
                       <SelectValue placeholder="시험항목 선택" />
@@ -156,27 +155,27 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold">3) 문제 내용</Label>
+                  <Label className="text-[15px] font-semibold">3. 문제 내용</Label>
                   <DebouncedTextarea placeholder="문제 내용을 입력하세요" value={item.issueContent || ""} onSave={(v) => onUpdate({ issueContent: v })} rows={2} data-testid={`input-issue-content-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold">4) 문제 원인</Label>
+                  <Label className="text-[15px] font-semibold">4. 문제 원인</Label>
                   <DebouncedTextarea placeholder="문제 원인을 입력하세요" value={item.issueCause || ""} onSave={(v) => onUpdate({ issueCause: v })} rows={2} data-testid={`input-issue-cause-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold">5) 문제 대책</Label>
+                  <Label className="text-[15px] font-semibold">5. 문제 대책</Label>
                   <DebouncedTextarea placeholder="문제 대책을 입력하세요" value={item.issueCountermeasure || ""} onSave={(v) => onUpdate({ issueCountermeasure: v })} rows={2} data-testid={`input-issue-countermeasure-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold">6) 대책 검증 결과</Label>
+                  <Label className="text-[15px] font-semibold">6. 대책 검증 결과</Label>
                   <DebouncedTextarea placeholder="대책 검증 결과를 입력하세요" value={item.verificationResult || ""} onSave={(v) => onUpdate({ verificationResult: v })} rows={2} data-testid={`input-verification-result-${item.id}`} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[13px] text-muted-foreground">7) 진행 상태</Label>
+                  <Label className="text-[13px] text-muted-foreground">7. 진행 상태</Label>
                   <Select value={item.progressStatus} onValueChange={(v) => onUpdate({ progressStatus: v as any })}>
                     <SelectTrigger data-testid={`select-issue-progress-${item.id}`}>
                       <SelectValue />
@@ -190,16 +189,15 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold">8) 메모</Label>
+                  <Label className="text-[15px] font-semibold">8. 메모</Label>
                   <DebouncedTextarea placeholder="메모를 입력하세요" value={item.notes || ""} onSave={(v) => onUpdate({ notes: v })} rows={2} data-testid={`input-issue-notes-${item.id}`} />
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <Upload className="w-4 h-4" />
-                    9) 시험 사진
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    9. 시험 사진
                   </h5>
                   <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
                     <input type="file" accept="image/*" onChange={handlePhotoFile} className="hidden" id={`issue-photo-upload-${item.id}`} data-testid={`input-issue-photo-${item.id}`} />
@@ -237,9 +235,8 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
                 </div>
 
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    10) 시험 그래프
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    10. 시험 그래프
                   </h5>
                   <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
                     <input type="file" accept="image/*" onChange={handleGraphFile} className="hidden" id={`issue-graph-upload-${item.id}`} data-testid={`input-issue-graph-${item.id}`} />
@@ -277,9 +274,8 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
                 </div>
 
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <Paperclip className="w-4 h-4" />
-                    11) 첨부파일
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    11. 첨부파일
                   </h5>
                   <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
                     <input type="file" multiple onChange={handleAttachmentFile} className="hidden" id={`issue-attachment-upload-${item.id}`} data-testid={`input-issue-attachment-${item.id}`} />

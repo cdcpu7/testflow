@@ -126,9 +126,8 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    1) 일정 관리
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    1. 일정 관리
                   </h5>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1.5">
@@ -147,7 +146,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold flex items-center gap-2">2) 시험 조건</Label>
+                  <Label className="text-[15px] font-semibold">2. 시험 조건</Label>
                   <DebouncedTextarea
                     placeholder="시험 조건을 입력하세요"
                     value={item.testCondition || ""}
@@ -158,7 +157,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold flex items-center gap-2">3) 판정 기준</Label>
+                  <Label className="text-[15px] font-semibold">3. 판정 기준</Label>
                   <DebouncedTextarea
                     placeholder="판정 기준을 입력하세요"
                     value={item.judgmentCriteria || ""}
@@ -169,7 +168,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold flex items-center gap-2">4) 시험 데이터</Label>
+                  <Label className="text-[15px] font-semibold">4. 시험 데이터</Label>
                   <DebouncedTextarea
                     placeholder="시험 데이터를 입력하세요"
                     value={item.testData || ""}
@@ -181,7 +180,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-muted-foreground">5) 시험 결과</Label>
+                    <Label className="text-[13px] text-muted-foreground">5. 시험 결과</Label>
                     <Select value={item.testResult || ""} onValueChange={(v) => onUpdate({ testResult: v as any })}>
                       <SelectTrigger data-testid={`select-test-result-${item.id}`}>
                         <SelectValue placeholder="선택" />
@@ -194,7 +193,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-muted-foreground">6) 진행 상태</Label>
+                    <Label className="text-[13px] text-muted-foreground">6. 진행 상태</Label>
                     <Select value={item.progressStatus} onValueChange={(v) => onUpdate({ progressStatus: v as any })}>
                       <SelectTrigger data-testid={`select-progress-${item.id}`}>
                         <SelectValue />
@@ -207,7 +206,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-muted-foreground">7) 보고서</Label>
+                    <Label className="text-[13px] text-muted-foreground">7. 보고서</Label>
                     <Select value={item.reportStatus} onValueChange={(v) => onUpdate({ reportStatus: v as any })}>
                       <SelectTrigger data-testid={`select-report-${item.id}`}>
                         <SelectValue />
@@ -222,7 +221,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[15px] font-semibold flex items-center gap-2">8) 메모</Label>
+                  <Label className="text-[15px] font-semibold">8. 메모</Label>
                   <DebouncedTextarea
                     placeholder="메모를 입력하세요"
                     value={item.notes || ""}
@@ -235,9 +234,8 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
 
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <Upload className="w-4 h-4" />
-                    9) 시험 사진
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    9. 시험 사진
                   </h5>
                   <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
                     <input type="file" accept="image/*" onChange={handlePhotoFile} className="hidden" id={`photo-upload-${item.id}`} data-testid={`input-photo-${item.id}`} />
@@ -275,9 +273,8 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 </div>
 
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    10) 시험 그래프
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    10. 시험 그래프
                   </h5>
                   <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
                     <input type="file" accept="image/*" onChange={handleGraphFile} className="hidden" id={`graph-upload-${item.id}`} data-testid={`input-graph-${item.id}`} />
@@ -315,9 +312,8 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 </div>
 
                 <div className="space-y-3">
-                  <h5 className="text-[15px] font-semibold text-card-foreground flex items-center gap-2">
-                    <Paperclip className="w-4 h-4" />
-                    11) 첨부파일
+                  <h5 className="text-[15px] font-semibold text-card-foreground">
+                    11. 첨부파일
                   </h5>
                   <div className="border-2 border-dashed border-border rounded-md p-4 text-center">
                     <input type="file" multiple onChange={handleAttachmentFile} className="hidden" id={`attachment-upload-${item.id}`} data-testid={`input-attachment-${item.id}`} />
