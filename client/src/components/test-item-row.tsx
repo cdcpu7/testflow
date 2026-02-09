@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Calendar, Upload, Trash2, Edit2, FlaskConical, BarChart3, Maximize2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Calendar, Upload, Trash2, X, Edit2, FlaskConical, BarChart3, Maximize2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -242,6 +242,20 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUp
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Maximize2 className="w-4 h-4 text-white" />
                           </div>
+                          <button
+                            className="absolute top-1 right-1 z-10 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("이 이미지를 삭제하시겠습니까?")) {
+                                const updated = [...(item.photos || [])];
+                                updated.splice(idx, 1);
+                                onUpdate({ photos: updated });
+                              }
+                            }}
+                            data-testid={`button-delete-photo-${item.id}-${idx}`}
+                          >
+                            <X className="w-3.5 h-3.5 text-white" />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -268,6 +282,20 @@ export function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUp
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Maximize2 className="w-4 h-4 text-white" />
                           </div>
+                          <button
+                            className="absolute top-1 right-1 z-10 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("이 이미지를 삭제하시겠습니까?")) {
+                                const updated = [...(item.graphs || [])];
+                                updated.splice(idx, 1);
+                                onUpdate({ graphs: updated });
+                              }
+                            }}
+                            data-testid={`button-delete-graph-${item.id}-${idx}`}
+                          >
+                            <X className="w-3.5 h-3.5 text-white" />
+                          </button>
                         </div>
                       ))}
                     </div>
