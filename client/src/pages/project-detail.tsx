@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   Maximize2,
   Upload,
+  Download,
   Pencil,
   Check,
   X,
@@ -56,6 +57,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [isEditingProductSpecDesc, setIsEditingProductSpecDesc] = useState(false);
   const [editedProductSpecDesc, setEditedProductSpecDesc] = useState("");
   const [resultFilter, setResultFilter] = useState<string | null>(null);
+  const excelImportRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { data: project, isLoading: projectLoading } = useQuery<Project>({
@@ -253,6 +255,38 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       toast({ title: "오류", description: error.message, variant: "destructive" });
     },
   });
+
+  const importTestItems = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/projects/${projectId}/test-items/import`, { method: "POST", body: formData, credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "test-items"] });
+      toast({ title: `${data.count}개 시험항목이 추가되었습니다.` });
+    },
+    onError: (error: Error) => {
+      toast({ title: "오류", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleExcelExport = () => {
+    window.open(`/api/projects/${projectId}/test-items/export`, "_blank");
+  };
+
+  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importTestItems.mutate(file);
+    }
+    if (excelImportRef.current) {
+      excelImportRef.current.value = "";
+    }
+  };
 
   const updateProjectImage = useMutation({
     mutationFn: async ({ type, file }: { type: "product" | "schedule"; file: File }) => {
@@ -612,7 +646,18 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
 
         <TabsContent value="test-items" className="space-y-4 mt-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2 flex-wrap">
+            <Button variant="outline" onClick={handleExcelExport} data-testid="button-export-excel">
+              <Download className="w-4 h-4 mr-2" />
+              엑셀 내보내기
+            </Button>
+            <div>
+              <input type="file" accept=".xlsx,.xls" onChange={handleExcelImport} className="hidden" ref={excelImportRef} data-testid="input-import-excel" />
+              <Button variant="outline" onClick={() => excelImportRef.current?.click()} disabled={importTestItems.isPending} data-testid="button-import-excel">
+                <Upload className="w-4 h-4 mr-2" />
+                {importTestItems.isPending ? "불러오는 중..." : "엑셀 불러오기"}
+              </Button>
+            </div>
             <Button onClick={() => setShowTestItemForm(true)} data-testid="button-add-test-item">
               <Plus className="w-4 h-4 mr-2" />
               시험항목추가

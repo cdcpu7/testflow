@@ -6,6 +6,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
+import XLSX from "xlsx";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -402,6 +403,126 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: "Failed to upload attachment" });
+    }
+  });
+
+  app.get("/api/projects/:projectId/test-items/export", requireAuth, async (req, res) => {
+    try {
+      const items = await storage.getTestItemsByProject(req.params.projectId);
+      const headers = ["No", "시작일", "완료예정일", "실제완료일", "시험 조건", "판정 기준", "시험 데이터", "시험 결과", "진행 상태", "보고서 상태", "메모"];
+      const rows = items.map((item, idx) => [
+        idx + 1,
+        item.plannedStartDate || "",
+        item.plannedEndDate || "",
+        item.actualEndDate || "",
+        item.testCondition || "",
+        item.judgmentCriteria || "",
+        item.testData || "",
+        item.testResult || "",
+        item.progressStatus || "",
+        item.reportStatus || "",
+        item.notes || "",
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const colWidths = [6, 14, 14, 14, 30, 30, 30, 12, 12, 12, 30];
+      ws["!cols"] = colWidths.map((w) => ({ wch: w }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "시험항목");
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Disposition", "attachment; filename=test_items.xlsx");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(buf);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export test items" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/test-items/import", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "파일이 업로드되지 않았습니다." });
+      }
+      const wb = XLSX.readFile(req.file.path);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      if (data.length < 2) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: "엑셀 파일에 데이터가 없습니다. (헤더 + 최소 1행 필요)" });
+      }
+
+      const validResults = ["OK", "NG", "TBD", ""];
+      const validProgress = ["대기중", "진행중", "완료"];
+      const validReport = ["대기중", "작성중", "완료"];
+      const errors: string[] = [];
+      const items: any[] = [];
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row || row.length === 0 || row.every((c: any) => c === undefined || c === null || c === "")) continue;
+
+        const rowNum = i + 1;
+        const testResult = String(row[7] ?? "").trim();
+        const progressStatus = String(row[8] ?? "").trim();
+        const reportStatus = String(row[9] ?? "").trim();
+
+        if (testResult && !validResults.includes(testResult)) {
+          errors.push(`${rowNum}행: 시험 결과 "${testResult}"는 허용되지 않는 값입니다. (OK/NG/TBD 중 선택)`);
+        }
+        if (progressStatus && !validProgress.includes(progressStatus)) {
+          errors.push(`${rowNum}행: 진행 상태 "${progressStatus}"는 허용되지 않는 값입니다. (대기중/진행중/완료 중 선택)`);
+        }
+        if (reportStatus && !validReport.includes(reportStatus)) {
+          errors.push(`${rowNum}행: 보고서 상태 "${reportStatus}"는 허용되지 않는 값입니다. (대기중/작성중/완료 중 선택)`);
+        }
+
+        items.push({
+          projectId: req.params.projectId,
+          name: `시험항목 ${String(row[0] ?? (i))}`,
+          plannedStartDate: String(row[1] ?? "").trim(),
+          plannedEndDate: String(row[2] ?? "").trim(),
+          actualEndDate: String(row[3] ?? "").trim(),
+          testCondition: String(row[4] ?? "").trim(),
+          judgmentCriteria: String(row[5] ?? "").trim(),
+          testData: String(row[6] ?? "").trim(),
+          testResult: testResult || "",
+          progressStatus: progressStatus || "대기중",
+          reportStatus: reportStatus || "대기중",
+          notes: String(row[10] ?? "").trim(),
+          photos: [],
+          graphs: [],
+          attachments: [],
+        });
+      }
+
+      fs.unlinkSync(req.file.path);
+
+      if (errors.length > 0) {
+        return res.status(400).json({ error: errors.join("\n") });
+      }
+
+      if (items.length === 0) {
+        return res.status(400).json({ error: "유효한 데이터 행이 없습니다." });
+      }
+
+      const existingItems = await storage.getTestItemsByProject(req.params.projectId);
+      const startNum = existingItems.length + 1;
+
+      const created: any[] = [];
+      for (let idx = 0; idx < items.length; idx++) {
+        const item = { ...items[idx], name: `시험항목 ${startNum + idx}` };
+        const result = await storage.createTestItem(item);
+        created.push(result);
+      }
+
+      res.status(201).json({ count: created.length, items: created });
+    } catch (error: any) {
+      console.error("Excel import error:", error?.message, error?.stack);
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      res.status(500).json({ error: "엑셀 파일 처리 중 오류가 발생했습니다." });
     }
   });
 
