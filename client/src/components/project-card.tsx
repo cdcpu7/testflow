@@ -1,4 +1,4 @@
-import { FolderOpen, Calendar, CheckCircle2, Clock, MoreVertical, FileText } from "lucide-react";
+import { FolderOpen, Calendar, MoreVertical } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,6 @@ export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: P
   const completedTests = testItems.filter((t) => t.progressStatus === "완료").length;
   const totalTests = testItems.length;
   const progress = totalTests > 0 ? (completedTests / totalTests) * 100 : 0;
-  const reportsCompleted = testItems.filter((t) => t.reportStatus === "완료").length;
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "완료":
@@ -88,39 +86,23 @@ export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: P
         </div>
       </CardHeader>
       <CardContent className="pt-0" onClick={onClick}>
-        <div className="space-y-4">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            {project.startDate && (
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>{project.startDate}</span>
-                {project.endDate && <span>~ {project.endDate}</span>}
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-2 rounded-md bg-muted/50">
-              <div className="text-lg font-semibold text-card-foreground">{totalTests}</div>
-              <div className="text-xs text-muted-foreground">전체 항목</div>
-            </div>
-            <div className="text-center p-2 rounded-md bg-muted/50">
-              <div className="text-lg font-semibold text-emerald-400">{completedTests}</div>
-              <div className="text-xs text-muted-foreground">시험 완료</div>
-            </div>
-            <div className="text-center p-2 rounded-md bg-muted/50">
-              <div className="text-lg font-semibold text-blue-400">{reportsCompleted}</div>
-              <div className="text-xs text-muted-foreground">보고서 완료</div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">진행률</span>
-              <span className="font-medium text-card-foreground">{Math.round(progress)}%</span>
+              <span className="text-muted-foreground">시험 진행률</span>
+              <span className="font-medium text-card-foreground" data-testid={`text-progress-${project.id}`}>{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="h-2" data-testid={`progress-bar-${project.id}`} />
           </div>
+
+          {(project.startDate || project.endDate) && (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Calendar className="w-3.5 h-3.5 shrink-0" />
+              <span data-testid={`text-period-${project.id}`}>
+                {project.startDate || "—"} ~ {project.endDate || "—"}
+              </span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
