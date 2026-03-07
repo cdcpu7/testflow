@@ -1,0 +1,11 @@
+nohup: ignoring input
+
+> rest-express@1.0.0 start
+> cross-env NODE_ENV=production node dist/index.cjs
+
+Warning: connect.session() MemoryStore is not
+designed for a production environment, as it will leak
+memory, and will not scale past a single process.
+12:19:12 AM [express] serving on port 5300
+10:11:04 AM [express] GET /api/auth/me 401 in 3ms :: {"error":"로그인이 필요합니다"}
+1:47:01 PM [express] GET /api/auth/me 401 in 1ms :: {"error":"로그인이 필요합니다"}
