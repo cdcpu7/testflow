@@ -4,4 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
-*.json  
+*.json
+*.log
+*.pid
+attached_assets/
+uploads/  
