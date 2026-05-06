@@ -62,7 +62,15 @@ export async function registerRoutes(
       if (!user) {
         return res.status(401).json({ error: "사용자명 또는 비밀번호가 틀립니다" });
       }
-      const valid = await bcrypt.compare(password, user.password);
+
+      // 기존 평문 비밀번호 데이터(레거시)와 bcrypt 해시 둘 다 허용
+      let valid = false;
+      try {
+        valid = await bcrypt.compare(password, user.password);
+      } catch {
+        valid = password === user.password;
+      }
+
       if (!valid) {
         return res.status(401).json({ error: "사용자명 또는 비밀번호가 틀립니다" });
       }
