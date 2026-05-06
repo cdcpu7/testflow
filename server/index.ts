@@ -5,7 +5,7 @@ import connectPg from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { pool } from "./db";
+import { ensureDatabaseSchema, pool } from "./db";
 
 const PostgresStore = connectPg(session);
 
@@ -91,6 +91,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await ensureDatabaseSchema();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
