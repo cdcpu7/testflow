@@ -12,14 +12,28 @@ export const pool = new pg.Pool({
 export const db = drizzle(pool);
 
 export async function ensureDatabaseSchema(): Promise<void> {
+  await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id varchar(36) PRIMARY KEY,
       username text NOT NULL UNIQUE,
       password text NOT NULL,
-      created_at timestamp DEFAULT now()
+      email varchar,
+      first_name varchar,
+      last_name varchar,
+      profile_image_url varchar,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
     );
   `);
+
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email varchar;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name varchar;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name varchar;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image_url varchar;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT now();`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now();`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS projects (
@@ -82,5 +96,18 @@ export async function ensureDatabaseSchema(): Promise<void> {
       graphs jsonb NOT NULL DEFAULT '[]'::jsonb,
       attachments jsonb NOT NULL DEFAULT '[]'::jsonb
     );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      sid varchar PRIMARY KEY,
+      sess jsonb NOT NULL,
+      expire timestamp NOT NULL
+    );
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_session_expire"
+    ON sessions (expire);
   `);
 }
