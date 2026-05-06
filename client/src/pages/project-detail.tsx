@@ -30,6 +30,7 @@ import { TestItemForm } from "@/components/test-item-form";
 import { IssueItemForm } from "@/components/issue-item-form";
 import { ImageModal } from "@/components/image-modal";
 import { SpecViewer } from "@/components/spec-viewer";
+import { TestScheduleSection } from "@/components/test-schedule-section";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, TestItem, IssueItem } from "@shared/schema";
@@ -52,7 +53,9 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [isEditingProductSpecDesc, setIsEditingProductSpecDesc] = useState(false);
   const [editedProductSpecDesc, setEditedProductSpecDesc] = useState("");
   const [resultFilter, setResultFilter] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("test-items");
   const excelImportRef = useRef<HTMLInputElement>(null);
+  const issueExcelImportRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { data: project, isLoading: projectLoading } = useQuery<Project>({
@@ -269,6 +272,24 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     },
   });
 
+  const importIssueItems = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/projects/${projectId}/issue-items/import`, { method: "POST", body: formData, credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "issue-items"] });
+      toast({ title: `${data.count}개 문제항목이 추가되었습니다.` });
+    },
+    onError: (error: Error) => {
+      toast({ title: "오류", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleExcelExport = () => {
     window.open(`/api/projects/${projectId}/test-items/export`, "_blank");
   };
@@ -281,6 +302,24 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     if (excelImportRef.current) {
       excelImportRef.current.value = "";
     }
+  };
+
+  const handleIssueExcelExport = () => {
+    window.open(`/api/projects/${projectId}/issue-items-export`, "_blank");
+  };
+
+  const handleIssueExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importIssueItems.mutate(file);
+    }
+    if (issueExcelImportRef.current) {
+      issueExcelImportRef.current.value = "";
+    }
+  };
+
+  const handleTestPlanExport = () => {
+    window.open(`/api/projects/${projectId}/test-plan-export`, "_blank");
   };
 
   const updateProjectImage = useMutation({
@@ -623,10 +662,28 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             </CardContent>
           </Card>
         </div>
+
+        {/* Test Schedule Section (Gantt Chart) */}
+        <TestScheduleSection
+          testItems={testItems}
+          onItemClick={(id) => {
+            setActiveTab("test-items");
+            // Optional: short delay to ensure tab is rendered before scrolling
+            setTimeout(() => {
+              const element = document.getElementById(`test-item-${id}`);
+              if (element) {
+                element.scrollIntoView({ behavior: "smooth", block: "center" });
+                element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+                setTimeout(() => element.classList.remove("ring-2", "ring-primary", "ring-offset-2"), 3000);
+              }
+            }, 100);
+          }}
+          onExportExcel={handleTestPlanExport}
+        />
       </div>
 
       {/* Tabs for Test Items and Issue Items */}
-      <Tabs defaultValue="test-items">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <TabsList data-testid="tabs-list">
             <TabsTrigger value="test-items" data-testid="tab-test-items">
@@ -692,8 +749,19 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </TabsContent>
 
         <TabsContent value="issue-items" className="space-y-4 mt-4">
-          <div className="flex justify-end">
-            <Button onClick={() => setShowIssueItemForm(true)} data-testid="button-add-issue-item">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleIssueExcelExport} className="flex-1 sm:flex-none" data-testid="button-export-issue-excel">
+                <Download className="w-4 h-4 mr-2" />
+                엑셀 내보내기
+              </Button>
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleIssueExcelImport} className="hidden" ref={issueExcelImportRef} data-testid="input-import-issue-excel" />
+              <Button variant="outline" onClick={() => { issueExcelImportRef.current?.click(); }} disabled={importIssueItems.isPending} className="flex-1 sm:flex-none" data-testid="button-import-issue-excel">
+                <Upload className="w-4 h-4 mr-2" />
+                {importIssueItems.isPending ? "불러오는 중..." : "파일 불러오기"}
+              </Button>
+            </div>
+            <Button onClick={() => setShowIssueItemForm(true)} className="w-full sm:w-auto" data-testid="button-add-issue-item">
               <Plus className="w-4 h-4 mr-2" />
               문제항목추가
             </Button>

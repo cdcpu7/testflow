@@ -325,7 +325,17 @@ export const IssueItemRow = memo(function IssueItemRow({ item, testItems, onUpda
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
-              <Button size="sm" variant="outline" className="text-destructive" onClick={onDelete} data-testid={`button-delete-issue-${item.id}`}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive"
+                onClick={() => {
+                  if (window.confirm("정말로 이 항목을 삭제하시겠습니까?")) {
+                    onDelete();
+                  }
+                }}
+                data-testid={`button-delete-issue-${item.id}`}
+              >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 삭제
               </Button>

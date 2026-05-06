@@ -82,7 +82,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
   };
 
   return (
-    <div className="border border-border rounded-md bg-card" data-testid={`test-item-${item.id}`}>
+    <div className="border border-border rounded-md bg-card" id={`test-item-${item.id}`} data-testid={`test-item-${item.id}`}>
       <div
         className="flex items-center gap-4 p-4 cursor-pointer hover-elevate"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -361,7 +361,17 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
-              <Button size="sm" variant="outline" className="text-destructive" onClick={onDelete} data-testid={`button-delete-item-${item.id}`}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive"
+                onClick={() => {
+                  if (window.confirm("정말로 이 항목을 삭제하시겠습니까?")) {
+                    onDelete();
+                  }
+                }}
+                data-testid={`button-delete-item-${item.id}`}
+              >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 삭제
               </Button>

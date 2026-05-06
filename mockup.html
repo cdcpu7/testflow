@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시험 계획 목업</title>
+    <style>
+        :root {
+            --bg-color: #0f1117;
+            --card-bg: #1a1d27;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-emerald: #10b981;
+            --border-color: #2e3643;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-content {
+            padding: 24px;
+        }
+
+        /* Gantt Layout Improvements */
+        .gantt-container {
+            position: relative;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .gantt-scroll-area {
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .gantt-scroll-area::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .gantt-scroll-area::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .gantt-grid-wrapper {
+            display: flex;
+            min-width: 800px;
+            /* Force overflow for demo */
+        }
+
+        .item-list-fixed {
+            width: 200px;
+            flex-shrink: 0;
+            background: var(--card-bg);
+            z-index: 2;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .schedule-scrollable {
+            flex-grow: 1;
+        }
+
+        .gantt-header {
+            display: flex;
+            background: #1e222d;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-item-name {
+            width: 200px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .header-dates {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .date-cell {
+            width: 40px;
+            height: 45px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
+            flex-shrink: 0;
+        }
+
+        .date-cell.today {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .date-cell .day-name {
+            font-size: 9px;
+            opacity: 0.6;
+            margin-bottom: 2px;
+        }
+
+        .test-item-row {
+            display: flex;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .test-item-row:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .item-cell {
+            width: 200px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .schedule-row {
+            display: flex;
+            flex-grow: 1;
+            position: relative;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 100%;
+        }
+
+        .gantt-bar {
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-emerald));
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+            z-index: 1;
+        }
+
+        /* Status Colors */
+        .gantt-bar.completed {
+            background: linear-gradient(90deg, #10b981, #059669);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .gantt-bar.delayed {
+            background: linear-gradient(90deg, #ef4444, #b91c1c);
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .gantt-bar.in-progress {
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .status-badge {
+            font-size: 9px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 6px;
+            font-weight: normal;
+        }
+
+        .status-badge.completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-badge.delayed {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .status-badge.pending {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .item-number {
+            background: var(--border-color);
+            color: var(--text-secondary);
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .today-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--accent-blue);
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .today-line::after {
+            content: 'Today (4/22)';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            background: var(--accent-blue);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-blue)">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                시험 계획 <span
+                    style="font-size: 12px; font-weight: normal; color: var(--text-secondary); margin-left: 8px;">(금주 기준
+                    시작일 순)</span>
+            </h2>
+        </div>
+        <div class="card-content">
+            <div class="gantt-container">
+                <div class="gantt-scroll-area">
+                    <div class="gantt-grid-wrapper">
+                        <!-- Header -->
+                        <div class="schedule-scrollable" style="width: 100%;">
+                            <div class="gantt-header">
+                                <div class="header-item-name">시험 항목</div>
+                                <div class="header-dates">
+                                    <div class="date-cell"><span class="day-name">일</span>4/19</div>
+                                    <div class="date-cell"><span class="day-name">월</span>4/20</div>
+                                    <div class="date-cell"><span class="day-name">화</span>4/21</div>
+                                    <div class="date-cell today"><span class="day-name">수</span>4/22</div>
+                                    <div class="date-cell"><span class="day-name">목</span>4/23</div>
+                                    <div class="date-cell"><span class="day-name">금</span>4/24</div>
+                                    <div class="date-cell"><span class="day-name">토</span>4/25</div>
+                                    <div class="date-cell"><span class="day-name">일</span>4/26</div>
+                                    <div class="date-cell"><span class="day-name">월</span>4/27</div>
+                                    <div class="date-cell"><span class="day-name">화</span>4/28</div>
+                                    <div class="date-cell"><span class="day-name">수</span>4/29</div>
+                                    <div class="date-cell"><span class="day-name">목</span>4/30</div>
+                                    <div class="date-cell"><span class="day-name">금</span>5/1</div>
+                                    <div class="date-cell"><span class="day-name">토</span>5/2</div>
+                                </div>
+                            </div>
+
+                            <!-- Row 1: Completed -->
+                            <a href="#" class="test-item-row">
+                                <div class="item-cell">
+                                    <div class="item-number">1</div>
+                                    기능 적합성 테스트 A <span class="status-badge completed">완료</span>
+                                </div>
+                                <div class="schedule-row">
+                                    <div class="gantt-bar completed" style="left: 40px; width: 80px;"></div>
+                                </div>
+                            </a>
+
+                            <!-- Row 2: Delayed -->
+                            <a href="#" class="test-item-row">
+                                <div class="item-cell">
+                                    <div class="item-number">2</div>
+                                    UI/UX 반응성 검증 <span class="status-badge delayed">지연</span>
+                                </div>
+                                <div class="schedule-row">
+                                    <div class="gantt-bar delayed" style="left: 40px; width: 120px;"></div>
+                                </div>
+                            </a>
+
+                            <!-- Row 3: In Progress -->
+                            <a href="#" class="test-item-row">
+                                <div class="item-cell">
+                                    <div class="item-number">3</div>
+                                    대용량 부하 테스트 <span class="status-badge pending">진행중</span>
+                                </div>
+                                <div class="schedule-row">
+                                    <div class="gantt-bar in-progress" style="left: 120px; width: 80px;"></div>
+                                </div>
+                            </a>
+
+                            <!-- Row 4: Pending/Normal -->
+                            <a href="#" class="test-item-row">
+                                <div class="item-cell">
+                                    <div class="item-number">4</div>
+                                    보안 취약점 스캔 <span class="status-badge pending">대기</span>
+                                </div>
+                                <div class="schedule-row">
+                                    <div class="gantt-bar" style="left: 200px; width: 80px;"></div>
+                                </div>
+                            </a>
+
+                            <!-- Today Line -->
+                            <div class="today-line" style="left: calc(200px + 40px * 3 + 20px);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 12px; font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between;">
+                <div style="display: flex; gap: 12px;">
+                    <span style="display: flex; align-items: center; gap: 4px;"><span
+                            style="width: 8px; height: 8px; border-radius: 2px; background: #10b981;"></span> 완료</span>
+                    <span style="display: flex; align-items: center; gap: 4px;"><span
+                            style="width: 8px; height: 8px; border-radius: 2px; background: #ef4444;"></span>
+                        지연/일정도과</span>
+                    <span style="display: flex; align-items: center; gap: 4px;"><span
+                            style="width: 8px; height: 8px; border-radius: 2px; background: #3b82f6;"></span> 진행중</span>
+                </div>
+                <span>* 가로로 스크롤하여 전체 일정을 확인할 수 있습니다.</span>
+            </div>
+        </div>
+    </div>
+</body>
+
+</body>
+
+</html>

@@ -7,6 +7,8 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
 import XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { format, addDays, startOfWeek, endOfWeek, parseISO, isWithinInterval, startOfDay, isBefore, isAfter } from "date-fns";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -320,6 +322,47 @@ export async function registerRoutes(
     }
   });
 
+  // 서버 반영 확인용 테스트 라우트
+  app.get("/api/ping", (req, res) => {
+    res.json({ message: "pong", version: "1.0.2" });
+  });
+
+  app.get("/api/projects/:projectId/issue-items-export", requireAuth, async (req, res) => {
+    try {
+      const issues = await storage.getIssueItemsByProject(req.params.projectId);
+      const testItems = await storage.getTestItemsByProject(req.params.projectId);
+      const testItemMap = new Map(testItems.map(ti => [ti.id, ti.name]));
+
+      const headers = ["문제항목명", "심각도", "발생일", "완료예정일", "실제완료일", "연관 시험 항목", "문제 내용", "문제 원인", "문제 대책", "대책 검증 결과", "진행 상태", "메모"];
+      const rows = issues.map((item) => [
+        item.name || "",
+        item.severity || "Medium",
+        item.occurredDate || "",
+        item.plannedEndDate || "",
+        item.actualEndDate || "",
+        testItemMap.get(item.relatedTestItemId || "") || "",
+        item.issueContent || "",
+        item.issueCause || "",
+        item.issueCountermeasure || "",
+        item.verificationResult || "",
+        item.progressStatus || "대기중",
+        item.notes || "",
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const colWidths = [25, 10, 14, 14, 14, 25, 35, 30, 30, 30, 12, 30];
+      ws["!cols"] = colWidths.map((w) => ({ wch: w }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "문제항목");
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Disposition", "attachment; filename=issue_items.xlsx");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(buf);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export issue items" });
+    }
+  });
+
   app.post("/api/projects/:projectId/issue-items", requireAuth, async (req, res) => {
     try {
       const data = { ...req.body, projectId: req.params.projectId };
@@ -411,6 +454,143 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: "Failed to upload attachment" });
+    }
+  });
+
+  app.get("/api/projects/:projectId/test-plan-export", requireAuth, async (req, res) => {
+    try {
+      const items = await storage.getTestItemsByProject(req.params.projectId);
+      const today = startOfDay(new Date());
+
+      const dates = items
+        .flatMap(item => [
+          item.plannedStartDate ? parseISO(item.plannedStartDate) : null,
+          item.plannedEndDate ? parseISO(item.plannedEndDate) : null
+        ])
+        .filter((d): d is Date => d !== null);
+
+      let weekStart = startOfWeek(today, { weekStartsOn: 0 });
+      let chartEnd = addDays(weekStart, 13);
+
+      if (dates.length > 0) {
+        const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+        const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+        weekStart = startOfWeek(isBefore(minDate, today) ? minDate : today, { weekStartsOn: 0 });
+        chartEnd = addDays(startOfWeek(isAfter(maxDate, addDays(weekStart, 13)) ? maxDate : addDays(weekStart, 13), { weekStartsOn: 0 }), 6);
+      }
+      const daysCount = Math.floor((chartEnd.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const days = Array.from({ length: daysCount }).map((_, i) => addDays(weekStart, i));
+
+      const sortedItems = items
+        .filter(item => item.plannedStartDate)
+        .sort((a, b) => {
+          const startA = parseISO(a.plannedStartDate!).getTime();
+          const startB = parseISO(b.plannedStartDate!).getTime();
+          return startA - startB;
+        });
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("시험 계획");
+
+      // Set columns
+      const baseCols = [
+        { header: "No", key: "no", width: 5 },
+        { header: "시험항목명", key: "name", width: 30 },
+        { header: "상태", key: "status", width: 10 },
+        { header: "시작일", key: "startDate", width: 12 },
+        { header: "종료일", key: "endDate", width: 12 },
+      ];
+
+      worksheet.columns = [
+        ...baseCols,
+        ...days.map((day, i) => ({
+          header: format(day, "M/d"),
+          key: `day_${i}`,
+          width: 4,
+        }))
+      ];
+
+      // Styling Header
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+
+      // Add Data
+      sortedItems.forEach((item, idx) => {
+        let status = item.progressStatus || "대기";
+        if (item.progressStatus === "완료") {
+          status = "완료";
+        } else if (item.plannedEndDate && isAfter(today, parseISO(item.plannedEndDate))) {
+          status = "일정초과";
+        } else if (item.plannedStartDate && (isWithinInterval(today, { start: parseISO(item.plannedStartDate), end: item.plannedEndDate ? parseISO(item.plannedEndDate) : parseISO(item.plannedStartDate) }) || isAfter(today, parseISO(item.plannedStartDate))) && item.progressStatus !== "진행중") {
+          status = "지연";
+        }
+
+        const rowData: any = {
+          no: idx + 1,
+          name: item.name,
+          status: status,
+          startDate: item.plannedStartDate || "",
+          endDate: item.plannedEndDate || "",
+        };
+
+        const row = worksheet.addRow(rowData);
+
+        // Color Gantt Cells
+        if (item.plannedStartDate) {
+          const itemStart = parseISO(item.plannedStartDate);
+          const itemEnd = item.plannedEndDate ? parseISO(item.plannedEndDate) : itemStart;
+
+          days.forEach((day, dayIdx) => {
+            const currentDayStart = startOfDay(day);
+            if (currentDayStart >= startOfDay(itemStart) && currentDayStart <= startOfDay(itemEnd)) {
+              const cell = row.getCell(baseCols.length + dayIdx + 1);
+
+              let color = 'FF3B82F6'; // Default Blue (In Progress)
+              if (status === "완료") color = 'FF10B981'; // Green
+              if (status === "일정초과") color = 'FFEF4444'; // Red
+              if (status === "지연") color = 'FFF59E0B'; // Amber
+              if (status === "대기중" || status === "대기") color = 'FFE0E0E0'; // Light Gray for pending in gantt (optional, common practice is to keep it empty or gray)
+
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: color }
+              };
+            }
+          });
+        }
+
+        // Row alignment
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(3).alignment = { horizontal: 'center' };
+      });
+
+      // Borders
+      worksheet.eachRow((row) => {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      });
+
+      res.setHeader("Content-Disposition", "attachment; filename=test_plan.xlsx");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error("Export error:", error);
+      res.status(500).json({ error: "Failed to export test plan" });
     }
   });
 
@@ -534,6 +714,104 @@ export async function registerRoutes(
       res.status(201).json({ count: created.length, items: created });
     } catch (error: any) {
       console.error("Excel import error:", error?.message, error?.stack);
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      res.status(500).json({ error: "엑셀 파일 처리 중 오류가 발생했습니다." });
+    }
+  });
+
+
+  app.post("/api/projects/:projectId/issue-items/import", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "파일이 업로드되지 않았습니다." });
+      }
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      let data: any[][];
+
+      if (ext === ".csv") {
+        const csvContent = fs.readFileSync(req.file.path, "utf-8");
+        const wb = XLSX.read(csvContent, { type: "string", raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+      } else {
+        const wb = XLSX.readFile(req.file.path, { raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+      }
+
+      if (data.length < 2) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: "엑셀 파일에 데이터가 없습니다. (헤더 + 최소 1행 필요)" });
+      }
+
+      const validSeverity = ["Low", "Medium", "High", "Critical"];
+      const validProgress = ["대기중", "진행중", "완료"];
+      const errors: string[] = [];
+      const items: any[] = [];
+
+      const testItems = await storage.getTestItemsByProject(req.params.projectId);
+      const testItemNameToId = new Map(testItems.map(ti => [ti.name, ti.id]));
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row || row.length === 0 || row.every((c: any) => c === undefined || c === null || c === "")) continue;
+
+        const rowNum = i + 1;
+        const severity = String(row[1] ?? "").trim() || "Medium";
+        const progressStatus = String(row[10] ?? "").trim() || "대기중";
+
+        if (severity && !validSeverity.includes(severity)) {
+          errors.push(`${rowNum}행: 심각도 "${severity}"는 허용되지 않는 값입니다. (Low/Medium/High/Critical 중 선택)`);
+        }
+        if (progressStatus && !validProgress.includes(progressStatus)) {
+          errors.push(`${rowNum}행: 진행 상태 "${progressStatus}"는 허용되지 않는 값입니다. (대기중/진행중/완료 중 선택)`);
+        }
+
+        const relatedTestItemName = String(row[5] ?? "").trim();
+        const relatedTestItemId = relatedTestItemName ? testItemNameToId.get(relatedTestItemName) : null;
+
+        items.push({
+          projectId: req.params.projectId,
+          name: String(row[0] ?? "").trim() || `문제항목 ${i}`,
+          severity: severity,
+          occurredDate: String(row[2] ?? "").trim(),
+          plannedEndDate: String(row[3] ?? "").trim(),
+          actualEndDate: String(row[4] ?? "").trim(),
+          relatedTestItemId: relatedTestItemId,
+          issueContent: String(row[6] ?? "").trim(),
+          issueCause: String(row[7] ?? "").trim(),
+          issueCountermeasure: String(row[8] ?? "").trim(),
+          verificationResult: String(row[9] ?? "").trim(),
+          progressStatus: progressStatus,
+          notes: String(row[11] ?? "").trim(),
+          photos: [],
+          graphs: [],
+          attachments: [],
+        });
+      }
+
+      fs.unlinkSync(req.file.path);
+
+      if (errors.length > 0) {
+        return res.status(400).json({ error: errors.join("\n") });
+      }
+
+      if (items.length === 0) {
+        return res.status(400).json({ error: "유효한 데이터 행이 없습니다." });
+      }
+
+      const created: any[] = [];
+      for (let idx = 0; idx < items.length; idx++) {
+        const result = await storage.createIssueItem(items[idx]);
+        created.push(result);
+      }
+
+      res.status(201).json({ count: created.length, items: created });
+    } catch (error: any) {
+      console.error("Issue Excel import error:", error?.message, error?.stack);
       if (req.file && fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);
       }
