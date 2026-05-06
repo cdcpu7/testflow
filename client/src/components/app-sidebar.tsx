@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { notifyAuthChanged } from "@/lib/auth-utils";
 import type { Project } from "@shared/schema";
 
 interface AppSidebarProps {
@@ -54,7 +55,9 @@ export function AppSidebar({ onNewProject }: AppSidebarProps) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.removeQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries();
+      notifyAuthChanged();
     },
   });
 

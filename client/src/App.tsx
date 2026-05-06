@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient, getQueryFn, apiRequest } from "./lib/queryClient";
 import { QueryClientProvider, useQuery, useMutation } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import RegisterPage from "@/pages/register";
 import NotFound from "@/pages/not-found";
 import { useToast } from "@/hooks/use-toast";
 import type { InsertProject } from "@shared/schema";
+import { subscribeToAuthChanges } from "@/lib/auth-utils";
 
 interface AuthUser {
   id: string;
@@ -80,6 +81,13 @@ function MainLayout() {
 
 function AppContent() {
   const [location] = useLocation();
+
+  useEffect(() => {
+    return subscribeToAuthChanges(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    });
+  }, []);
   
   const { data: user, isLoading } = useQuery<AuthUser | null>({
     queryKey: ["/api/auth/me"],

@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
+import { notifyAuthChanged } from "@/lib/auth-utils";
 
 interface AuthUser {
   id: string;
@@ -21,6 +22,8 @@ export function useAuth() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      notifyAuthChanged();
     },
   });
 
@@ -31,6 +34,8 @@ export function useAuth() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      notifyAuthChanged();
     },
   });
 
@@ -40,7 +45,10 @@ export function useAuth() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.removeQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      notifyAuthChanged();
     },
   });
 
