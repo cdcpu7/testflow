@@ -9,3 +9,4 @@ vite.config.ts.*
 *.pid
 attached_assets/
 uploads/  
+data/
