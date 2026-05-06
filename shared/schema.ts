@@ -1,6 +1,15 @@
-import { pgTable, text, varchar, boolean, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { pgTable, text, varchar, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Attachment schema (Shared Zod)
+export const attachmentSchema = z.object({
+  url: z.string(),
+  filename: z.string(),
+  size: z.number().optional(),
+});
+
+export type Attachment = z.infer<typeof attachmentSchema>;
 
 // Users table for authentication
 export const users = pgTable("users", {
@@ -10,6 +19,67 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Projects table
+export const projects = pgTable("projects", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  productSpec: text("product_spec"),
+  scheduleImage: text("schedule_image"),
+  scheduleDescription: text("schedule_description"),
+  productImage: text("product_image"),
+  productSpecDescription: text("product_spec_description"),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  status: text("status").notNull().default("진행중"),
+  lastUpdatedAt: text("last_updated_at"),
+});
+
+// Test Items table
+export const testItems = pgTable("test_items", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  projectId: varchar("project_id", { length: 36 }).notNull().references(() => projects.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  lastModifiedDate: text("last_modified_date"),
+  plannedStartDate: text("planned_start_date"),
+  plannedEndDate: text("planned_end_date"),
+  actualEndDate: text("actual_end_date"),
+  testCondition: text("test_condition"),
+  judgmentCriteria: text("judgment_criteria"),
+  testData: text("test_data"),
+  testResult: text("test_result").notNull().default(""),
+  progressStatus: text("progress_status").notNull().default("대기중"),
+  reportStatus: text("report_status").notNull().default("대기중"),
+  notes: text("notes"),
+  photos: jsonb("photos").$type<string[]>().notNull().default([]),
+  graphs: jsonb("graphs").$type<string[]>().notNull().default([]),
+  attachments: jsonb("attachments").$type<Attachment[]>().notNull().default([]),
+});
+
+// Issue Items table
+export const issueItems = pgTable("issue_items", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  projectId: varchar("project_id", { length: 36 }).notNull().references(() => projects.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  lastModifiedDate: text("last_modified_date"),
+  severity: text("severity").notNull().default("Medium"),
+  occurredDate: text("occurred_date"),
+  plannedEndDate: text("planned_end_date"),
+  actualEndDate: text("actual_end_date"),
+  relatedTestItemId: text("related_test_item_id"),
+  issueContent: text("issue_content"),
+  issueCause: text("issue_cause"),
+  issueCountermeasure: text("issue_countermeasure"),
+  verificationResult: text("verification_result"),
+  progressStatus: text("progress_status").notNull().default("대기중"),
+  notes: text("notes"),
+  photos: jsonb("photos").$type<string[]>().notNull().default([]),
+  graphs: jsonb("graphs").$type<string[]>().notNull().default([]),
+  attachments: jsonb("attachments").$type<Attachment[]>().notNull().default([]),
+});
+
+// Schemas for validation and types
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -18,89 +88,21 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: z.string().min(4, "비밀번호는 4자 이상이어야 합니다"),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, userId: true });
+export const projectSchema = createSelectSchema(projects);
+
+export const insertTestItemSchema = createInsertSchema(testItems).omit({ id: true });
+export const testItemSchema = createSelectSchema(testItems);
+
+export const insertIssueItemSchema = createInsertSchema(issueItems).omit({ id: true });
+export const issueItemSchema = createSelectSchema(issueItems);
+
 export type User = typeof users.$inferSelect;
-
-// Project schema
-export const projectSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  name: z.string().min(1, "프로젝트명을 입력하세요"),
-  description: z.string().optional(),
-  productSpec: z.string().optional(),
-  scheduleImage: z.string().optional(),
-  scheduleDescription: z.string().optional(),
-  productImage: z.string().optional(),
-  productSpecDescription: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  status: z.enum(["진행중", "완료", "프로젝트 중단"]).default("진행중"),
-  lastUpdatedAt: z.string().optional(),
-});
-
-export const insertProjectSchema = projectSchema.omit({ id: true, userId: true });
-
-export type Project = z.infer<typeof projectSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
-
-// Attachment schema
-export const attachmentSchema = z.object({
-  url: z.string(),
-  filename: z.string(),
-  size: z.number().optional(),
-});
-
-export type Attachment = z.infer<typeof attachmentSchema>;
-
-// Test Item schema
-export const testItemSchema = z.object({
-  id: z.string(),
-  projectId: z.string(),
-  name: z.string().min(1, "시험항목명을 입력하세요"),
-  lastModifiedDate: z.string().optional(),
-  plannedStartDate: z.string().optional(),
-  plannedEndDate: z.string().optional(),
-  actualEndDate: z.string().optional(),
-  testCondition: z.string().optional(),
-  judgmentCriteria: z.string().optional(),
-  testData: z.string().optional(),
-  testResult: z.enum(["", "OK", "NG", "TBD"]).default(""),
-  progressStatus: z.enum(["대기중", "진행중", "완료"]).default("대기중"),
-  reportStatus: z.enum(["대기중", "작성중", "완료"]).default("대기중"),
-  notes: z.string().optional(),
-  photos: z.array(z.string()).default([]),
-  graphs: z.array(z.string()).default([]),
-  attachments: z.array(attachmentSchema).default([]),
-});
-
-export const insertTestItemSchema = testItemSchema.omit({ id: true });
-
-export type TestItem = z.infer<typeof testItemSchema>;
+export type TestItem = typeof testItems.$inferSelect;
 export type InsertTestItem = z.infer<typeof insertTestItemSchema>;
-
-// Issue Item schema (문제항목)
-export const issueItemSchema = z.object({
-  id: z.string(),
-  projectId: z.string(),
-  name: z.string().min(1, "문제항목명을 입력하세요"),
-  lastModifiedDate: z.string().optional(),
-  severity: z.enum(["Low", "Medium", "High"]).default("Medium"),
-  occurredDate: z.string().optional(),
-  plannedEndDate: z.string().optional(),
-  actualEndDate: z.string().optional(),
-  relatedTestItemId: z.string().optional(),
-  issueContent: z.string().optional(),
-  issueCause: z.string().optional(),
-  issueCountermeasure: z.string().optional(),
-  verificationResult: z.string().optional(),
-  progressStatus: z.enum(["대기중", "진행중", "완료"]).default("대기중"),
-  notes: z.string().optional(),
-  photos: z.array(z.string()).default([]),
-  graphs: z.array(z.string()).default([]),
-  attachments: z.array(attachmentSchema).default([]),
-});
-
-export const insertIssueItemSchema = issueItemSchema.omit({ id: true });
-
-export type IssueItem = z.infer<typeof issueItemSchema>;
+export type IssueItem = typeof issueItems.$inferSelect;
 export type InsertIssueItem = z.infer<typeof insertIssueItemSchema>;
+

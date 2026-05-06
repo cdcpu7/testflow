@@ -7,41 +7,15 @@ import {
   type InsertTestItem,
   type IssueItem,
   type InsertIssueItem,
+  users,
+  projects,
+  testItems,
+  issueItems,
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
-import fs from "fs";
-import path from "path";
-
-const DATA_DIR = path.join(process.cwd(), "data");
-
-// Ensure data directory exists
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-// Generic JSON file operations
-function readJsonFile<T>(filename: string, defaultValue: T): T {
-  ensureDataDir();
-  const filePath = path.join(DATA_DIR, filename);
-  if (!fs.existsSync(filePath)) {
-    return defaultValue;
-  }
-  try {
-    const content = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(content) as T;
-  } catch {
-    return defaultValue;
-  }
-}
-
-function writeJsonFile<T>(filename: string, data: T): void {
-  ensureDataDir();
-  const filePath = path.join(DATA_DIR, filename);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
-}
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -70,98 +44,34 @@ export interface IStorage {
   deleteIssueItem(id: string): Promise<boolean>;
 }
 
-interface StorageData {
-  users: Record<string, User>;
-  projects: Record<string, Project>;
-  testItems: Record<string, TestItem>;
-  issueItems: Record<string, IssueItem>;
-}
-
-export class JsonStorage implements IStorage {
-  private users: Map<string, User>;
-  private projects: Map<string, Project>;
-  private testItems: Map<string, TestItem>;
-  private issueItems: Map<string, IssueItem>;
-  private initialized: boolean = false;
-
-  constructor() {
-    this.users = new Map();
-    this.projects = new Map();
-    this.testItems = new Map();
-    this.issueItems = new Map();
-    this.loadData();
-  }
-
-  private loadData(): void {
-    const data = readJsonFile<StorageData>("storage.json", {
-      users: {},
-      projects: {},
-      testItems: {},
-      issueItems: {},
-    });
-
-    this.users = new Map(Object.entries(data.users));
-    this.projects = new Map(Object.entries(data.projects));
-    this.testItems = new Map(Object.entries(data.testItems));
-    this.issueItems = new Map(Object.entries(data.issueItems));
-
-    // Create default user if no users exist
-    if (this.users.size === 0) {
-      this.initDefaultUser();
-    }
-    this.initialized = true;
-  }
-
-  private saveData(): void {
-    const data: StorageData = {
-      users: Object.fromEntries(this.users),
-      projects: Object.fromEntries(this.projects),
-      testItems: Object.fromEntries(this.testItems),
-      issueItems: Object.fromEntries(this.issueItems),
-    };
-    writeJsonFile("storage.json", data);
-  }
-
-  private async initDefaultUser(): Promise<void> {
-    const hashedPassword = await bcrypt.hash("1234", 10);
-    const defaultUser: User = {
-      id: randomUUID(),
-      username: "노세영",
-      password: hashedPassword,
-      createdAt: new Date(),
-    };
-    this.users.set(defaultUser.id, defaultUser);
-    this.saveData();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id, createdAt: new Date() };
-    this.users.set(id, user);
-    this.saveData();
+    const [user] = await db.insert(users).values({ ...insertUser, id }).returning();
     return user;
   }
 
   async getProjectsByUser(userId: string): Promise<Project[]> {
-    return Array.from(this.projects.values()).filter((p) => p.userId === userId);
+    return await db.select().from(projects).where(eq(projects.userId, userId));
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return Array.from(this.projects.values());
+    return await db.select().from(projects);
   }
 
   async getProject(id: string): Promise<Project | undefined> {
-    return this.projects.get(id);
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
   }
 
   private todayString(): string {
@@ -170,146 +80,140 @@ export class JsonStorage implements IStorage {
   }
 
   private async touchProject(projectId: string): Promise<void> {
-    const project = this.projects.get(projectId);
-    if (project) {
-      this.projects.set(projectId, { ...project, lastUpdatedAt: this.todayString() });
-      this.saveData();
-    }
+    await db
+      .update(projects)
+      .set({ lastUpdatedAt: this.todayString() })
+      .where(eq(projects.id, projectId));
   }
 
   async createProject(projectData: InsertProject, userId: string): Promise<Project> {
     const id = randomUUID();
-    const project: Project = { ...projectData, id, userId, lastUpdatedAt: this.todayString() };
-    this.projects.set(id, project);
-    this.saveData();
+    const [project] = await db
+      .insert(projects)
+      .values({
+        id,
+        userId,
+        ...projectData,
+        lastUpdatedAt: this.todayString(),
+      } as any)
+      .returning();
     return project;
   }
 
   async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project | undefined> {
-    const project = this.projects.get(id);
-    if (!project) return undefined;
-    const updated = { ...project, ...updates, lastUpdatedAt: this.todayString() };
-    this.projects.set(id, updated);
-    this.saveData();
+    const [updated] = await db
+      .update(projects)
+      .set({ ...updates, lastUpdatedAt: this.todayString() })
+      .where(eq(projects.id, id))
+      .returning();
     return updated;
   }
 
   async deleteProject(id: string): Promise<boolean> {
-    const items = Array.from(this.testItems.values()).filter(
-      (item) => item.projectId === id
-    );
-    for (const item of items) {
-      this.testItems.delete(item.id);
-    }
-    const issues = Array.from(this.issueItems.values()).filter(
-      (item) => item.projectId === id
-    );
-    for (const issue of issues) {
-      this.issueItems.delete(issue.id);
-    }
-    const deleted = this.projects.delete(id);
-    this.saveData();
-    return deleted;
+    // Note: Foreign key constraints with onDelete: "cascade" should handle testItems and issueItems
+    const [deleted] = await db.delete(projects).where(eq(projects.id, id)).returning();
+    return !!deleted;
   }
 
   async getAllTestItems(): Promise<TestItem[]> {
-    return Array.from(this.testItems.values());
+    return await db.select().from(testItems);
   }
 
   async getTestItemsByProject(projectId: string): Promise<TestItem[]> {
-    return Array.from(this.testItems.values()).filter(
-      (item) => item.projectId === projectId
-    );
+    return await db.select().from(testItems).where(eq(testItems.projectId, projectId));
   }
 
   async getTestItem(id: string): Promise<TestItem | undefined> {
-    return this.testItems.get(id);
+    const [item] = await db.select().from(testItems).where(eq(testItems.id, id));
+    return item;
   }
 
   async createTestItem(itemData: InsertTestItem): Promise<TestItem> {
     const id = randomUUID();
-    const item: TestItem = {
-      ...itemData,
-      id,
-      testResult: itemData.testResult ?? "",
-      progressStatus: itemData.progressStatus ?? "대기중",
-      reportStatus: itemData.reportStatus ?? "대기중",
-      photos: itemData.photos ?? [],
-      graphs: itemData.graphs ?? [],
-      lastModifiedDate: this.todayString(),
-    };
-    this.testItems.set(id, item);
-    this.saveData();
+    const [item] = await db
+      .insert(testItems)
+      .values({
+        id,
+        testResult: itemData.testResult ?? "",
+        progressStatus: itemData.progressStatus ?? "대기중",
+        reportStatus: itemData.reportStatus ?? "대기중",
+        photos: itemData.photos ?? [],
+        graphs: itemData.graphs ?? [],
+        attachments: itemData.attachments ?? [],
+        ...itemData,
+        lastModifiedDate: this.todayString(),
+      } as any)
+      .returning();
     await this.touchProject(itemData.projectId);
     return item;
   }
 
   async updateTestItem(id: string, updates: Partial<TestItem>): Promise<TestItem | undefined> {
-    const item = this.testItems.get(id);
-    if (!item) return undefined;
-    const updated = { ...item, ...updates, lastModifiedDate: this.todayString() };
-    this.testItems.set(id, updated);
-    this.saveData();
-    await this.touchProject(item.projectId);
+    const [updated] = await db
+      .update(testItems)
+      .set({ ...updates, lastModifiedDate: this.todayString() })
+      .where(eq(testItems.id, id))
+      .returning();
+    if (updated) await this.touchProject(updated.projectId);
     return updated;
   }
 
   async deleteTestItem(id: string): Promise<boolean> {
-    const item = this.testItems.get(id);
-    const deleted = this.testItems.delete(id);
-    this.saveData();
+    const [item] = await db.select().from(testItems).where(eq(testItems.id, id));
+    const [deleted] = await db.delete(testItems).where(eq(testItems.id, id)).returning();
     if (item) await this.touchProject(item.projectId);
-    return deleted;
+    return !!deleted;
   }
 
   async getAllIssueItems(): Promise<IssueItem[]> {
-    return Array.from(this.issueItems.values());
+    return await db.select().from(issueItems);
   }
 
   async getIssueItemsByProject(projectId: string): Promise<IssueItem[]> {
-    return Array.from(this.issueItems.values()).filter(
-      (item) => item.projectId === projectId
-    );
+    return await db.select().from(issueItems).where(eq(issueItems.projectId, projectId));
   }
 
   async getIssueItem(id: string): Promise<IssueItem | undefined> {
-    return this.issueItems.get(id);
+    const [item] = await db.select().from(issueItems).where(eq(issueItems.id, id));
+    return item;
   }
 
   async createIssueItem(itemData: InsertIssueItem): Promise<IssueItem> {
     const id = randomUUID();
-    const item: IssueItem = {
-      ...itemData,
-      id,
-      severity: itemData.severity ?? "Medium",
-      progressStatus: itemData.progressStatus ?? "대기중",
-      photos: itemData.photos ?? [],
-      graphs: itemData.graphs ?? [],
-      lastModifiedDate: this.todayString(),
-    };
-    this.issueItems.set(id, item);
-    this.saveData();
+    const [item] = await db
+      .insert(issueItems)
+      .values({
+        id,
+        severity: itemData.severity ?? "Medium",
+        progressStatus: itemData.progressStatus ?? "대기중",
+        photos: itemData.photos ?? [],
+        graphs: itemData.graphs ?? [],
+        attachments: itemData.attachments ?? [],
+        ...itemData,
+        lastModifiedDate: this.todayString(),
+      } as any)
+      .returning();
     await this.touchProject(itemData.projectId);
     return item;
   }
 
   async updateIssueItem(id: string, updates: Partial<IssueItem>): Promise<IssueItem | undefined> {
-    const item = this.issueItems.get(id);
-    if (!item) return undefined;
-    const updated = { ...item, ...updates, lastModifiedDate: this.todayString() };
-    this.issueItems.set(id, updated);
-    this.saveData();
-    await this.touchProject(item.projectId);
+    const [updated] = await db
+      .update(issueItems)
+      .set({ ...updates, lastModifiedDate: this.todayString() })
+      .where(eq(issueItems.id, id))
+      .returning();
+    if (updated) await this.touchProject(updated.projectId);
     return updated;
   }
 
   async deleteIssueItem(id: string): Promise<boolean> {
-    const item = this.issueItems.get(id);
-    const deleted = this.issueItems.delete(id);
-    this.saveData();
+    const [item] = await db.select().from(issueItems).where(eq(issueItems.id, id));
+    const [deleted] = await db.delete(issueItems).where(eq(issueItems.id, id)).returning();
     if (item) await this.touchProject(item.projectId);
-    return deleted;
+    return !!deleted;
   }
 }
 
-export const storage = new JsonStorage();
+export const storage = new DatabaseStorage();
+

@@ -10,3 +10,4 @@ vite.config.ts.*
 attached_assets/
 uploads/  
 data/
+.env
