@@ -97,6 +97,7 @@ export function ProjectForm({ open, onClose, onSubmit, project, isPending }: Pro
                       className="resize-none"
                       rows={3}
                       {...field}
+                      value={field.value || ""}
                       data-testid="input-project-description"
                     />
                   </FormControl>
