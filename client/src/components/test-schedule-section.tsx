@@ -242,7 +242,10 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
 
                         {/* Scrollable chart area */}
                         <div ref={scrollRef} className="overflow-x-auto relative pb-8">
-                            <div style={{ width: LABEL_COL_WIDTH + chartWidth }} className="relative">
+                            <div
+                                style={{ width: LABEL_COL_WIDTH + chartWidth }}
+                                className="relative min-w-max"
+                            >
                                 {/* Today vertical line - 절대 좌표, 전체 차트 관통 */}
                                 {todayIndex !== -1 && (
                                     <div
@@ -259,14 +262,14 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
                                 )}
 
                                 {/* Header */}
-                                <div ref={headerRef} className="flex bg-muted/40 border-b sticky top-0 z-10">
+                                <div ref={headerRef} className="flex bg-muted/40 border-b sticky top-0 z-10 min-w-max">
                                     <div
                                         className="shrink-0 p-3 text-[12px] font-semibold border-r bg-muted/40"
                                         style={{ width: LABEL_COL_WIDTH }}
                                     >
                                         시험 항목
                                     </div>
-                                    <div className="flex">
+                                    <div className="flex min-w-max">
                                         {days.map((day) => {
                                             const dayStr = format(day, "yyyy-MM-dd");
                                             const isToday = dayStr === todayStr;
@@ -274,7 +277,7 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
                                                 <div
                                                     key={dayStr}
                                                     className={cn(
-                                                        "flex flex-col items-center justify-center py-2 border-r text-[11px] last:border-r-0",
+                                                        "flex shrink-0 flex-col items-center justify-center py-2 border-r text-[11px] last:border-r-0",
                                                         isToday && "bg-blue-500/10 text-blue-400 font-bold",
                                                         !isToday && isWeekendOrHoliday(day) && "text-red-500"
                                                     )}
@@ -302,7 +305,7 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
                                             return (
                                                 <div
                                                     key={item.id}
-                                                    className="flex border-b last:border-b-0 hover:bg-muted/10 cursor-pointer group transition-colors"
+                                                    className="flex min-w-max border-b last:border-b-0 hover:bg-muted/10 cursor-pointer group transition-colors"
                                                     onClick={() => onItemClick(item.id)}
                                                 >
                                                     <div
@@ -324,14 +327,14 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
                                                         </span>
                                                     </div>
                                                     {/* Chart area per row */}
-                                                    <div className="relative h-12" style={{ width: chartWidth }}>
+                                                    <div className="relative h-12 shrink-0" style={{ width: chartWidth }}>
                                                         {/* Background grid columns */}
-                                                        <div className="absolute inset-0 flex">
+                                                        <div className="absolute inset-0 flex min-w-max">
                                                             {days.map((day) => (
                                                                 <div
                                                                     key={day.toISOString()}
                                                                     className={cn(
-                                                                        "border-r last:border-r-0 h-full",
+                                                                        "shrink-0 border-r last:border-r-0 h-full",
                                                                         isWeekendOrHoliday(day) && "bg-red-500/[0.03]"
                                                                     )}
                                                                     style={{ width: colWidth }}
