@@ -3,6 +3,16 @@ import { ChevronDown, ChevronRight, Calendar, Upload, Trash2, X, Edit2, FlaskCon
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInput } from "@/components/date-input";
 import { DebouncedTextarea } from "@/components/debounced-textarea";
@@ -27,6 +37,18 @@ function formatFileSize(bytes?: number): string {
 
 export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete, onPhotoUpload, onGraphUpload, onAttachmentUpload, onPhotoClick }: TestItemRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{ title: string; description: string; onConfirm: () => void } | null>(null);
+
+  const openConfirm = (config: { title: string; description: string; onConfirm: () => void }) => {
+    setConfirmConfig(config);
+    setConfirmOpen(true);
+  };
+
+  const closeConfirm = () => {
+    setConfirmOpen(false);
+    setConfirmConfig(null);
+  };
 
   const getProgressBadge = () => {
     switch (item.progressStatus) {
@@ -253,11 +275,15 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                             className="absolute top-1 right-1 z-10 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm("이 이미지를 삭제하시겠습니까?")) {
-                                const updated = [...(item.photos || [])];
-                                updated.splice(idx, 1);
-                                onUpdate({ photos: updated });
-                              }
+                              openConfirm({
+                                title: "사진을 삭제할까요?",
+                                description: "삭제하면 이 사진은 복구할 수 없습니다.",
+                                onConfirm: () => {
+                                  const updated = [...(item.photos || [])];
+                                  updated.splice(idx, 1);
+                                  onUpdate({ photos: updated });
+                                },
+                              });
                             }}
                             data-testid={`button-delete-photo-${item.id}-${idx}`}
                           >
@@ -292,11 +318,15 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                             className="absolute top-1 right-1 z-10 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm("이 이미지를 삭제하시겠습니까?")) {
-                                const updated = [...(item.graphs || [])];
-                                updated.splice(idx, 1);
-                                onUpdate({ graphs: updated });
-                              }
+                              openConfirm({
+                                title: "그래프를 삭제할까요?",
+                                description: "삭제하면 이 그래프는 복구할 수 없습니다.",
+                                onConfirm: () => {
+                                  const updated = [...(item.graphs || [])];
+                                  updated.splice(idx, 1);
+                                  onUpdate({ graphs: updated });
+                                },
+                              });
                             }}
                             data-testid={`button-delete-graph-${item.id}-${idx}`}
                           >
@@ -342,11 +372,15 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                             className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm("이 파일을 삭제하시겠습니까?")) {
-                                const updated = [...(item.attachments || [])];
-                                updated.splice(idx, 1);
-                                onUpdate({ attachments: updated });
-                              }
+                              openConfirm({
+                                title: "파일을 삭제할까요?",
+                                description: "삭제하면 이 파일은 복구할 수 없습니다.",
+                                onConfirm: () => {
+                                  const updated = [...(item.attachments || [])];
+                                  updated.splice(idx, 1);
+                                  onUpdate({ attachments: updated });
+                                },
+                              });
                             }}
                             data-testid={`button-delete-attachment-${item.id}-${idx}`}
                           >
@@ -366,9 +400,11 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 variant="outline"
                 className="text-destructive"
                 onClick={() => {
-                  if (window.confirm("정말로 이 항목을 삭제하시겠습니까?")) {
-                    onDelete();
-                  }
+                  openConfirm({
+                    title: "시험항목을 삭제할까요?",
+                    description: "삭제하면 이 시험항목은 복구할 수 없습니다.",
+                    onConfirm: onDelete,
+                  });
                 }}
                 data-testid={`button-delete-item-${item.id}`}
               >
@@ -379,6 +415,30 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
           </div>
         </div>
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={(open) => {
+        setConfirmOpen(open);
+        if (!open) setConfirmConfig(null);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmConfig?.title ?? "삭제할까요?"}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmConfig?.description ?? "이 작업은 되돌릴 수 없습니다."}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeConfirm}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                confirmConfig?.onConfirm();
+                closeConfirm();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
