@@ -144,7 +144,12 @@ export async function registerRoutes(
           return res.status(500).json({ error: "로그인에 실패했습니다" });
         }
         req.session.userId = user.id;
-        res.json({ id: user.id, username: user.username });
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            return res.status(500).json({ error: "로그인에 실패했습니다" });
+          }
+          res.json({ id: user.id, username: user.username });
+        });
       });
     } catch (error) {
       res.status(500).json({ error: "로그인에 실패했습니다" });
