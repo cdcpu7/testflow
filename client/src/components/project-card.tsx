@@ -1,8 +1,19 @@
+import { useState } from "react";
 import { FolderOpen, Calendar, MoreVertical } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +31,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: ProjectCardProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const completedTests = testItems.filter((t) => t.progressStatus === "완료").length;
   const totalTests = testItems.length;
   const progress = totalTests > 0 ? (completedTests / totalTests) * 100 : 0;
@@ -75,7 +87,10 @@ export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: P
                 수정
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={onDelete}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setDeleteOpen(true);
+                }}
                 className="text-destructive"
                 data-testid={`button-delete-${project.id}`}
               >
@@ -107,6 +122,27 @@ export function ProjectCard({ project, testItems, onClick, onEdit, onDelete }: P
 
         </div>
       </CardContent>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>프로젝트를 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              삭제하면 프로젝트와 연결된 시험 항목, 문제 항목, 첨부파일이 함께 삭제될 수 있습니다. 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid={`button-confirm-delete-${project.id}`}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
