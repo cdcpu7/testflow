@@ -67,7 +67,7 @@ export function AppSidebar({ onNewProject }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3 rounded-md transition-colors hover:bg-sidebar-accent/40 p-1 -m-1" data-testid="link-sidebar-home">
           <Avatar className="w-9 h-9">
             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
               {initials}
@@ -81,7 +81,7 @@ export function AppSidebar({ onNewProject }: AppSidebarProps) {
               시험관리
             </p>
           </div>
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="flex-1 overflow-hidden">
