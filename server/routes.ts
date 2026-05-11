@@ -68,26 +68,30 @@ function normalizeImportedDate(value: unknown): string {
   }
 
   const normalized = raw.replace(/\./g, "/").replace(/-/g, "/").replace(/\s+/g, " ");
-  const formats = [
-    "yyyy/MM/dd",
-    "yyyy/M/d",
-    "yy/MM/dd",
-    "yy/M/d",
-    "MM/dd/yyyy",
-    "M/d/yyyy",
-    "MM/dd/yy",
-    "M/d/yy",
-    "dd/MM/yyyy",
-    "d/M/yyyy",
-    "dd/MM/yy",
-    "d/M/yy",
-    "MMM d, yyyy",
-    "MMMM d, yyyy",
-  ];
+  const parts = normalized.split(/[^0-9A-Za-z]+/).filter(Boolean);
+
+  let formats: string[] = [];
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      formats = ["yyyy/MM/dd", "yyyy/M/d"];
+    } else if (parts[2].length === 4) {
+      formats = ["MM/dd/yyyy", "M/d/yyyy", "dd/MM/yyyy", "d/M/yyyy"];
+    } else if (parts[2].length <= 2) {
+      formats = ["MM/dd/yy", "M/d/yy", "dd/MM/yy", "d/M/yy"];
+    } else if (parts[0].length <= 2) {
+      formats = ["yy/MM/dd", "yy/M/d"];
+    }
+  }
+
+  formats.push("MMM d, yyyy", "MMMM d, yyyy");
 
   for (const dateFormat of formats) {
     const parsed = parse(normalized, dateFormat, new Date());
     if (isValid(parsed)) {
+      const yearToken = dateFormat.split("/").find((token) => token.includes("y")) ?? "";
+      if (yearToken === "yy" && parsed.getFullYear() < 2000) {
+        parsed.setFullYear(parsed.getFullYear() + 100);
+      }
       return format(parsed, "yyyy-MM-dd");
     }
   }

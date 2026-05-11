@@ -40,10 +40,20 @@ function normalizeAndParse(input: string): string | null {
     day = parseInt(digitsOnly.slice(6, 8), 10);
   } else {
     const parts = cleaned.split(/[^0-9]+/).filter(Boolean);
-    if (parts.length === 3 && parts[0].length === 4) {
-      year = parseInt(parts[0], 10);
-      month = parseInt(parts[1], 10);
-      day = parseInt(parts[2], 10);
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+        day = parseInt(parts[2], 10);
+      } else if (parts[2].length === 4) {
+        month = parseInt(parts[0], 10);
+        day = parseInt(parts[1], 10);
+        year = parseInt(parts[2], 10);
+      } else if (parts[2].length <= 2) {
+        month = parseInt(parts[0], 10);
+        day = parseInt(parts[1], 10);
+        year = 2000 + parseInt(parts[2], 10);
+      }
     }
   }
 

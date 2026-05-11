@@ -70,7 +70,7 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
       case "TBD":
         return <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30">TBD</Badge>;
       default:
-        return <span className="text-muted-foreground text-xs">-</span>;
+        return <Badge variant="outline" className="bg-muted text-muted-foreground">대기중</Badge>;
     }
   };
 
@@ -200,11 +200,12 @@ export const TestItemRow = memo(function TestItemRow({ item, onUpdate, onDelete,
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
                     <Label className="text-[15px] font-semibold">5. 시험 결과</Label>
-                    <Select value={item.testResult || ""} onValueChange={(v) => onUpdate({ testResult: v as any })}>
+                    <Select value={item.testResult || "대기중"} onValueChange={(v) => onUpdate({ testResult: (v === "대기중" ? "" : v) as any })}>
                       <SelectTrigger data-testid={`select-test-result-${item.id}`}>
-                        <SelectValue placeholder="선택" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="대기중">대기중</SelectItem>
                         <SelectItem value="OK">OK</SelectItem>
                         <SelectItem value="NG">NG</SelectItem>
                         <SelectItem value="TBD">TBD</SelectItem>
