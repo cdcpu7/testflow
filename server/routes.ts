@@ -8,7 +8,7 @@ import fs from "fs";
 import bcrypt from "bcrypt";
 import XLSX from "xlsx";
 import ExcelJS from "exceljs";
-import { format, addDays, startOfWeek, endOfWeek, parseISO, isWithinInterval, startOfDay, isBefore, isAfter } from "date-fns";
+import { format, addDays, startOfWeek, endOfWeek, parseISO, isWithinInterval, startOfDay, isBefore, isAfter, parse, isValid } from "date-fns";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -26,6 +26,74 @@ const multerStorage = multer.diskStorage({
 });
 
 const upload = multer({ storage: multerStorage });
+
+function normalizeExcelDate(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "";
+
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return format(value, "yyyy-MM-dd");
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const parsed = XLSX.SSF?.parse_date_code?.(value);
+    if (parsed) {
+      const date = new Date(parsed.y, parsed.m - 1, parsed.d);
+      if (!isNaN(date.getTime())) return format(date, "yyyy-MM-dd");
+    }
+  }
+
+  const text = String(value).trim();
+  if (!text) return "";
+
+  const normalized = text
+    .replace(/[.\/]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const compact = normalized.replace(/[^0-9]/g, "");
+  if (compact.length === 8) {
+    const year = Number(compact.slice(0, 4));
+    const month = Number(compact.slice(4, 6));
+    const day = Number(compact.slice(6, 8));
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+      return format(date, "yyyy-MM-dd");
+    }
+  }
+
+  const datePatterns = [
+    "yyyy-MM-dd",
+    "yyyy-M-d",
+    "yyyy/MM/dd",
+    "yyyy/M/d",
+    "yyyy.MM.dd",
+    "yyyy.M.d",
+    "MM/dd/yyyy",
+    "M/d/yyyy",
+    "dd/MM/yyyy",
+    "d/M/yyyy",
+    "MM-dd-yyyy",
+    "M-d-yyyy",
+    "dd-MM-yyyy",
+    "d-M-yyyy",
+    "MM.dd.yyyy",
+    "M.d.yyyy",
+    "dd.MM.yyyy",
+    "d.M.yyyy",
+    "MM/dd/yy",
+    "M/d/yy",
+    "dd/MM/yy",
+    "d/M/yy",
+  ];
+
+  const referenceDate = new Date();
+  for (const pattern of datePatterns) {
+    const parsed = parse(normalized, pattern, referenceDate);
+    if (isValid(parsed)) return format(parsed, "yyyy-MM-dd");
+  }
+
+  return text;
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -679,9 +747,9 @@ export async function registerRoutes(
         items.push({
           projectId: req.params.projectId,
           name: String(row[0] ?? "").trim() || `시험항목 ${i}`,
-          plannedStartDate: String(row[1] ?? "").trim(),
-          plannedEndDate: String(row[2] ?? "").trim(),
-          actualEndDate: String(row[3] ?? "").trim(),
+          plannedStartDate: normalizeExcelDate(row[1]),
+          plannedEndDate: normalizeExcelDate(row[2]),
+          actualEndDate: normalizeExcelDate(row[3]),
           testCondition: String(row[4] ?? "").trim(),
           judgmentCriteria: String(row[5] ?? "").trim(),
           testData: String(row[6] ?? "").trim(),
@@ -777,9 +845,9 @@ export async function registerRoutes(
           projectId: req.params.projectId,
           name: String(row[0] ?? "").trim() || `문제항목 ${i}`,
           severity: severity,
-          occurredDate: String(row[2] ?? "").trim(),
-          plannedEndDate: String(row[3] ?? "").trim(),
-          actualEndDate: String(row[4] ?? "").trim(),
+          occurredDate: normalizeExcelDate(row[2]),
+          plannedEndDate: normalizeExcelDate(row[3]),
+          actualEndDate: normalizeExcelDate(row[4]),
           relatedTestItemId: relatedTestItemId,
           issueContent: String(row[6] ?? "").trim(),
           issueCause: String(row[7] ?? "").trim(),
