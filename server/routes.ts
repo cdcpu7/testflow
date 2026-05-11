@@ -27,72 +27,77 @@ const multerStorage = multer.diskStorage({
 
 const upload = multer({ storage: multerStorage });
 
-function normalizeExcelDate(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "";
+function normalizeImportedDate(value: unknown): string {
+  if (value === null || value === undefined) return "";
 
-  if (value instanceof Date && !isNaN(value.getTime())) {
+  if (value instanceof Date && isValid(value)) {
     return format(value, "yyyy-MM-dd");
   }
 
   if (typeof value === "number" && Number.isFinite(value)) {
-    const parsed = XLSX.SSF?.parse_date_code?.(value);
+    const parsed = XLSX.SSF.parse_date_code(value);
     if (parsed) {
       const date = new Date(parsed.y, parsed.m - 1, parsed.d);
-      if (!isNaN(date.getTime())) return format(date, "yyyy-MM-dd");
+      if (isValid(date)) return format(date, "yyyy-MM-dd");
     }
   }
 
-  const text = String(value).trim();
-  if (!text) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
 
-  const normalized = text
-    .replace(/[.\/]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric) && numeric > 20000 && numeric < 100000) {
+      const parsed = XLSX.SSF.parse_date_code(numeric);
+      if (parsed) {
+        const date = new Date(parsed.y, parsed.m - 1, parsed.d);
+        if (isValid(date)) return format(date, "yyyy-MM-dd");
+      }
+    }
+  }
 
-  const compact = normalized.replace(/[^0-9]/g, "");
-  if (compact.length === 8) {
-    const year = Number(compact.slice(0, 4));
-    const month = Number(compact.slice(4, 6));
-    const day = Number(compact.slice(6, 8));
-    const date = new Date(year, month - 1, day);
-    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+  const digitsOnly = raw.replace(/\D/g, "");
+  if (digitsOnly.length === 8) {
+    const yyyy = Number(digitsOnly.slice(0, 4));
+    const mm = Number(digitsOnly.slice(4, 6));
+    const dd = Number(digitsOnly.slice(6, 8));
+    const date = new Date(yyyy, mm - 1, dd);
+    if (date.getFullYear() === yyyy && date.getMonth() === mm - 1 && date.getDate() === dd) {
       return format(date, "yyyy-MM-dd");
     }
   }
 
-  const datePatterns = [
-    "yyyy-MM-dd",
-    "yyyy-M-d",
+  const normalized = raw.replace(/\./g, "/").replace(/-/g, "/").replace(/\s+/g, " ");
+  const formats = [
     "yyyy/MM/dd",
     "yyyy/M/d",
-    "yyyy.MM.dd",
-    "yyyy.M.d",
+    "yy/MM/dd",
+    "yy/M/d",
     "MM/dd/yyyy",
     "M/d/yyyy",
-    "dd/MM/yyyy",
-    "d/M/yyyy",
-    "MM-dd-yyyy",
-    "M-d-yyyy",
-    "dd-MM-yyyy",
-    "d-M-yyyy",
-    "MM.dd.yyyy",
-    "M.d.yyyy",
-    "dd.MM.yyyy",
-    "d.M.yyyy",
     "MM/dd/yy",
     "M/d/yy",
+    "dd/MM/yyyy",
+    "d/M/yyyy",
     "dd/MM/yy",
     "d/M/yy",
+    "MMM d, yyyy",
+    "MMMM d, yyyy",
   ];
 
-  const referenceDate = new Date();
-  for (const pattern of datePatterns) {
-    const parsed = parse(normalized, pattern, referenceDate);
-    if (isValid(parsed)) return format(parsed, "yyyy-MM-dd");
+  for (const dateFormat of formats) {
+    const parsed = parse(normalized, dateFormat, new Date());
+    if (isValid(parsed)) {
+      return format(parsed, "yyyy-MM-dd");
+    }
   }
 
-  return text;
+  const isoParsed = parseISO(raw);
+  if (isValid(isoParsed)) {
+    return format(isoParsed, "yyyy-MM-dd");
+  }
+
+  return raw;
 }
 
 export async function registerRoutes(
@@ -747,9 +752,9 @@ export async function registerRoutes(
         items.push({
           projectId: req.params.projectId,
           name: String(row[0] ?? "").trim() || `시험항목 ${i}`,
-          plannedStartDate: normalizeExcelDate(row[1]),
-          plannedEndDate: normalizeExcelDate(row[2]),
-          actualEndDate: normalizeExcelDate(row[3]),
+          plannedStartDate: normalizeImportedDate(row[1]),
+          plannedEndDate: normalizeImportedDate(row[2]),
+          actualEndDate: normalizeImportedDate(row[3]),
           testCondition: String(row[4] ?? "").trim(),
           judgmentCriteria: String(row[5] ?? "").trim(),
           testData: String(row[6] ?? "").trim(),
@@ -845,9 +850,9 @@ export async function registerRoutes(
           projectId: req.params.projectId,
           name: String(row[0] ?? "").trim() || `문제항목 ${i}`,
           severity: severity,
-          occurredDate: normalizeExcelDate(row[2]),
-          plannedEndDate: normalizeExcelDate(row[3]),
-          actualEndDate: normalizeExcelDate(row[4]),
+          occurredDate: normalizeImportedDate(row[2]),
+          plannedEndDate: normalizeImportedDate(row[3]),
+          actualEndDate: normalizeImportedDate(row[4]),
           relatedTestItemId: relatedTestItemId,
           issueContent: String(row[6] ?? "").trim(),
           issueCause: String(row[7] ?? "").trim(),

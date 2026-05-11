@@ -19,6 +19,12 @@ function isoToDisplay(iso: string): string {
   return p.length === 3 ? `${p[0]}-${p[1]}-${p[2]}` : iso;
 }
 
+function normalizeDisplayValue(value: string): string {
+  if (!value) return "";
+  const normalized = normalizeAndParse(value);
+  return normalized ? isoToDisplay(normalized) : value;
+}
+
 function normalizeAndParse(input: string): string | null {
   const cleaned = input.trim();
   if (!cleaned) return null;
@@ -54,13 +60,13 @@ function normalizeAndParse(input: string): string | null {
 }
 
 export function DateInput({ value, onChange, disabled, testId, placeholder = "YYYY-MM-DD" }: DateInputProps) {
-  const [textValue, setTextValue] = useState(value ? isoToDisplay(value) : "");
+  const [textValue, setTextValue] = useState(value ? normalizeDisplayValue(value) : "");
   const [error, setError] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setTextValue(value ? isoToDisplay(value) : "");
+    setTextValue(value ? normalizeDisplayValue(value) : "");
     setError("");
   }, [value]);
 
