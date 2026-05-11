@@ -27,18 +27,6 @@ export function useAuth() {
     },
   });
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: { username: string; password: string }) => {
-      const res = await apiRequest("POST", "/api/auth/register", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      notifyAuthChanged();
-    },
-  });
-
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/auth/logout");
@@ -61,9 +49,6 @@ export function useAuth() {
     login: loginMutation.mutateAsync,
     loginError: loginMutation.error,
     isLoggingIn: loginMutation.isPending,
-    register: registerMutation.mutateAsync,
-    registerError: registerMutation.error,
-    isRegistering: registerMutation.isPending,
     logout: logoutMutation.mutate,
     isLoggingOut: logoutMutation.isPending,
   };

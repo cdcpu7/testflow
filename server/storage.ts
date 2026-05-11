@@ -30,6 +30,7 @@ export interface IStorage {
   deleteProject(id: string): Promise<boolean>;
 
   getAllTestItems(): Promise<TestItem[]>;
+  getTestItemsByUser(userId: string): Promise<TestItem[]>;
   getTestItemsByProject(projectId: string): Promise<TestItem[]>;
   getTestItem(id: string): Promise<TestItem | undefined>;
   createTestItem(item: InsertTestItem): Promise<TestItem>;
@@ -117,6 +118,32 @@ export class DatabaseStorage implements IStorage {
 
   async getAllTestItems(): Promise<TestItem[]> {
     return await db.select().from(testItems);
+  }
+
+  async getTestItemsByUser(userId: string): Promise<TestItem[]> {
+    return await db
+      .select({
+        id: testItems.id,
+        projectId: testItems.projectId,
+        name: testItems.name,
+        plannedStartDate: testItems.plannedStartDate,
+        plannedEndDate: testItems.plannedEndDate,
+        actualEndDate: testItems.actualEndDate,
+        testCondition: testItems.testCondition,
+        judgmentCriteria: testItems.judgmentCriteria,
+        testData: testItems.testData,
+        testResult: testItems.testResult,
+        progressStatus: testItems.progressStatus,
+        reportStatus: testItems.reportStatus,
+        notes: testItems.notes,
+        photos: testItems.photos,
+        graphs: testItems.graphs,
+        attachments: testItems.attachments,
+        lastModifiedDate: testItems.lastModifiedDate,
+      })
+      .from(testItems)
+      .innerJoin(projects, eq(testItems.projectId, projects.id))
+      .where(eq(projects.userId, userId));
   }
 
   async getTestItemsByProject(projectId: string): Promise<TestItem[]> {

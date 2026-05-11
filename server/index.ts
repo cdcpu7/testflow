@@ -8,6 +8,7 @@ import { createServer } from "http";
 import { ensureDatabaseSchema, pool } from "./db";
 
 const PostgresStore = connectPg(session);
+const isProduction = process.env.NODE_ENV === "production";
 
 const app = express();
 const httpServer = createServer(app);
@@ -40,13 +41,20 @@ app.use(
       pool,
       createTableIfMissing: true,
     }),
-    secret: process.env.SESSION_SECRET || "test-secret-key",
+    secret: process.env.SESSION_SECRET ?? (() => {
+      if (isProduction) {
+        throw new Error("SESSION_SECRET is required in production");
+      }
+      return "test-secret-key";
+    })(),
+    name: "testflow.sid",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: isProduction,
       httpOnly: true,
       sameSite: "lax",
+      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   })

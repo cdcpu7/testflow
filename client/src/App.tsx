@@ -10,7 +10,6 @@ import { ProjectsList } from "@/pages/projects-list";
 import { ProjectDetail } from "@/pages/project-detail";
 import { ProjectForm } from "@/components/project-form";
 import LoginPage from "@/pages/login";
-import RegisterPage from "@/pages/register";
 import NotFound from "@/pages/not-found";
 import { useToast } from "@/hooks/use-toast";
 import type { InsertProject } from "@shared/schema";
@@ -107,14 +106,13 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    if (location !== "/login" && location !== "/register") {
+    if (location !== "/login") {
       return <Redirect to="/login" />;
     }
     
     return (
       <Switch>
         <Route path="/login" component={LoginPage} />
-        <Route path="/register" component={RegisterPage} />
         <Route>
           <Redirect to="/login" />
         </Route>
@@ -122,7 +120,7 @@ function AppContent() {
     );
   }
 
-  if (location === "/login" || location === "/register") {
+  if (location === "/login") {
     return <Redirect to="/" />;
   }
 

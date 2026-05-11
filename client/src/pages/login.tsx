@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,12 +85,6 @@ export default function LoginPage() {
               {isLoggingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               로그인
             </Button>
-            <p className="text-sm text-muted-foreground text-center">
-              계정이 없으신가요?{" "}
-              <Link href="/register" className="text-primary hover:underline" data-testid="link-register">
-                회원가입
-              </Link>
-            </p>
           </CardFooter>
         </form>
       </Card>

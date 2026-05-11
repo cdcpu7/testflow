@@ -27,6 +27,14 @@ const multerStorage = multer.diskStorage({
 
 const upload = multer({ storage: multerStorage });
 
+function canAccessProject(project: any, userId?: string): boolean {
+  return !!project && !!userId && project.userId === userId;
+}
+
+function isSafeUploadPath(fileUrl: string | null | undefined): boolean {
+  return typeof fileUrl === "string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(fileUrl);
+}
+
 function normalizeImportedDate(value: unknown): string {
   if (value === null || value === undefined) return "";
 
@@ -109,28 +117,6 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // Auth API
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const parsed = insertUserSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ error: parsed.error.errors[0].message });
-      }
-      const existing = await storage.getUserByUsername(parsed.data.username);
-      if (existing) {
-        return res.status(400).json({ error: "이미 사용 중인 사용자명입니다" });
-      }
-      const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
-      const user = await storage.createUser({
-        username: parsed.data.username,
-        password: hashedPassword,
-      });
-      req.session.userId = user.id;
-      res.status(201).json({ id: user.id, username: user.username });
-    } catch (error) {
-      res.status(500).json({ error: "회원가입에 실패했습니다" });
-    }
-  });
-
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -153,8 +139,13 @@ export async function registerRoutes(
       if (!valid) {
         return res.status(401).json({ error: "사용자명 또는 비밀번호가 틀립니다" });
       }
-      req.session.userId = user.id;
-      res.json({ id: user.id, username: user.username });
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).json({ error: "로그인에 실패했습니다" });
+        }
+        req.session.userId = user.id;
+        res.json({ id: user.id, username: user.username });
+      });
     } catch (error) {
       res.status(500).json({ error: "로그인에 실패했습니다" });
     }
@@ -165,6 +156,7 @@ export async function registerRoutes(
       if (err) {
         return res.status(500).json({ error: "로그아웃에 실패했습니다" });
       }
+      res.clearCookie("testflow.sid", { path: "/" });
       res.json({ success: true });
     });
   });
@@ -181,8 +173,9 @@ export async function registerRoutes(
   });
 
   app.use("/uploads", (req, res, next) => {
-    const filePath = path.join(uploadDir, req.path);
-    if (fs.existsSync(filePath)) {
+    const normalizedPath = path.normalize(req.path).replace(/^([.]{2}[\/\\])+/, "");
+    const filePath = path.join(uploadDir, normalizedPath);
+    if (filePath.startsWith(uploadDir) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       res.sendFile(filePath);
     } else {
       res.status(404).send("File not found");
@@ -212,6 +205,9 @@ export async function registerRoutes(
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       res.json(project);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch project" });
@@ -233,6 +229,10 @@ export async function registerRoutes(
 
   app.patch("/api/projects/:id", requireAuth, async (req, res) => {
     try {
+      const current = await storage.getProject(req.params.id);
+      if (!canAccessProject(current, req.session.userId)) {
+        return res.status(current ? 403 : 404).json({ error: current ? "Forbidden" : "Project not found" });
+      }
       const project = await storage.updateProject(req.params.id, req.body);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
@@ -245,6 +245,10 @@ export async function registerRoutes(
 
   app.delete("/api/projects/:id", requireAuth, async (req, res) => {
     try {
+      const current = await storage.getProject(req.params.id);
+      if (!canAccessProject(current, req.session.userId)) {
+        return res.status(current ? 403 : 404).json({ error: current ? "Forbidden" : "Project not found" });
+      }
       const deleted = await storage.deleteProject(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Project not found" });
@@ -260,6 +264,9 @@ export async function registerRoutes(
       const project = await storage.getProject(req.params.id);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
+      }
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
       }
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
@@ -279,7 +286,7 @@ export async function registerRoutes(
   // Test Items API
   app.get("/api/test-items", requireAuth, async (req, res) => {
     try {
-      const items = await storage.getAllTestItems();
+      const items = await storage.getTestItemsByUser(req.session.userId!);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch test items" });
@@ -288,6 +295,10 @@ export async function registerRoutes(
 
   app.get("/api/projects/:projectId/test-items", requireAuth, async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
       const items = await storage.getTestItemsByProject(req.params.projectId);
       res.json(items);
     } catch (error) {
@@ -297,6 +308,10 @@ export async function registerRoutes(
 
   app.post("/api/projects/:projectId/test-items", requireAuth, async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
       const data = { ...req.body, projectId: req.params.projectId };
       const parsed = insertTestItemSchema.safeParse(data);
       if (!parsed.success) {
@@ -311,6 +326,11 @@ export async function registerRoutes(
 
   app.patch("/api/test-items/:id", requireAuth, async (req, res) => {
     try {
+      const current = await storage.getTestItem(req.params.id);
+      const project = current ? await storage.getProject(current.projectId) : undefined;
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(current ? 403 : 404).json({ error: current ? "Forbidden" : "Test item not found" });
+      }
       const item = await storage.updateTestItem(req.params.id, req.body);
       if (!item) {
         return res.status(404).json({ error: "Test item not found" });
@@ -323,6 +343,11 @@ export async function registerRoutes(
 
   app.delete("/api/test-items/:id", requireAuth, async (req, res) => {
     try {
+      const current = await storage.getTestItem(req.params.id);
+      const project = current ? await storage.getProject(current.projectId) : undefined;
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(current ? 403 : 404).json({ error: current ? "Forbidden" : "Test item not found" });
+      }
       const deleted = await storage.deleteTestItem(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Test item not found" });
@@ -338,6 +363,9 @@ export async function registerRoutes(
       const item = await storage.getTestItem(req.params.id);
       if (!item) {
         return res.status(404).json({ error: "Test item not found" });
+      }
+      if (!canAccessProject(await storage.getProject(item.projectId), req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
       }
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
@@ -357,6 +385,9 @@ export async function registerRoutes(
       if (!item) {
         return res.status(404).json({ error: "Test item not found" });
       }
+      if (!canAccessProject(await storage.getProject(item.projectId), req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -375,6 +406,9 @@ export async function registerRoutes(
       if (!item) {
         return res.status(404).json({ error: "Test item not found" });
       }
+      if (!canAccessProject(await storage.getProject(item.projectId), req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -392,6 +426,10 @@ export async function registerRoutes(
   // Issue Items API
   app.get("/api/projects/:projectId/issue-items", requireAuth, async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
       const items = await storage.getIssueItemsByProject(req.params.projectId);
       res.json(items);
     } catch (error) {
@@ -406,6 +444,10 @@ export async function registerRoutes(
 
   app.get("/api/projects/:projectId/issue-items-export", requireAuth, async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
       const issues = await storage.getIssueItemsByProject(req.params.projectId);
       const testItems = await storage.getTestItemsByProject(req.params.projectId);
       const testItemMap = new Map(testItems.map(ti => [ti.id, ti.name]));
@@ -442,6 +484,10 @@ export async function registerRoutes(
 
   app.post("/api/projects/:projectId/issue-items", requireAuth, async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
       const data = { ...req.body, projectId: req.params.projectId };
       const parsed = insertIssueItemSchema.safeParse(data);
       if (!parsed.success) {
@@ -456,6 +502,11 @@ export async function registerRoutes(
 
   app.patch("/api/issue-items/:id", requireAuth, async (req, res) => {
     try {
+      const current = await storage.getIssueItem(req.params.id);
+      const project = current ? await storage.getProject(current.projectId) : undefined;
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(current ? 403 : 404).json({ error: current ? "Forbidden" : "Issue item not found" });
+      }
       const item = await storage.updateIssueItem(req.params.id, req.body);
       if (!item) {
         return res.status(404).json({ error: "Issue item not found" });
@@ -468,6 +519,11 @@ export async function registerRoutes(
 
   app.delete("/api/issue-items/:id", requireAuth, async (req, res) => {
     try {
+      const current = await storage.getIssueItem(req.params.id);
+      const project = current ? await storage.getProject(current.projectId) : undefined;
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(current ? 403 : 404).json({ error: current ? "Forbidden" : "Issue item not found" });
+      }
       const deleted = await storage.deleteIssueItem(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Issue item not found" });
@@ -483,6 +539,9 @@ export async function registerRoutes(
       const item = await storage.getIssueItem(req.params.id);
       if (!item) {
         return res.status(404).json({ error: "Issue item not found" });
+      }
+      if (!canAccessProject(await storage.getProject(item.projectId), req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
       }
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
@@ -502,6 +561,9 @@ export async function registerRoutes(
       if (!item) {
         return res.status(404).json({ error: "Issue item not found" });
       }
+      if (!canAccessProject(await storage.getProject(item.projectId), req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -520,6 +582,9 @@ export async function registerRoutes(
       if (!item) {
         return res.status(404).json({ error: "Issue item not found" });
       }
+      if (!canAccessProject(await storage.getProject(item.projectId), req.session.userId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -536,6 +601,10 @@ export async function registerRoutes(
 
   app.get("/api/projects/:projectId/test-plan-export", requireAuth, async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
       const items = await storage.getTestItemsByProject(req.params.projectId);
       const today = startOfDay(new Date());
 
@@ -673,6 +742,10 @@ export async function registerRoutes(
 
   app.get("/api/projects/:projectId/test-items/export", requireAuth, async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
       const items = await storage.getTestItemsByProject(req.params.projectId);
       const headers = ["시험항목명", "시작일", "완료예정일", "실제완료일", "시험 조건", "판정 기준", "시험 데이터", "시험 결과", "진행 상태", "보고서 상태", "메모"];
       const rows = items.map((item) => [
@@ -705,6 +778,11 @@ export async function registerRoutes(
 
   app.post("/api/projects/:projectId/test-items/import", requireAuth, upload.single("file"), async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
+
       if (!req.file) {
         return res.status(400).json({ error: "파일이 업로드되지 않았습니다." });
       }
@@ -801,6 +879,11 @@ export async function registerRoutes(
 
   app.post("/api/projects/:projectId/issue-items/import", requireAuth, upload.single("file"), async (req, res) => {
     try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!canAccessProject(project, req.session.userId)) {
+        return res.status(project ? 403 : 404).json({ error: project ? "Forbidden" : "Project not found" });
+      }
+
       if (!req.file) {
         return res.status(400).json({ error: "파일이 업로드되지 않았습니다." });
       }
