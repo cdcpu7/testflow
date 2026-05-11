@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { format, addDays, startOfWeek, isWithinInterval, parseISO, isBefore, isAfter, startOfDay, getDay } from "date-fns";
+import { format, addDays, startOfWeek, isWithinInterval, parseISO, isBefore, isAfter, startOfDay, getDay, isValid } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, GripVertical } from "lucide-react";
@@ -39,6 +39,12 @@ const MIN_COL_WIDTH = 20;
 const MAX_COL_WIDTH = 120;
 const DEFAULT_COL_WIDTH = 40;
 
+const parseSafeISODate = (value: string | null | undefined) => {
+    if (!value) return null;
+    const parsed = parseISO(value);
+    return isValid(parsed) ? parsed : null;
+};
+
 export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: TestScheduleSectionProps) {
     const today = startOfDay(new Date());
     const [colWidth, setColWidth] = useState(DEFAULT_COL_WIDTH);
@@ -53,8 +59,8 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
     const { chartStart, chartEnd, totalDays } = useMemo(() => {
         const dates = testItems
             .flatMap(item => [
-                item.plannedStartDate ? parseISO(item.plannedStartDate) : null,
-                item.plannedEndDate ? parseISO(item.plannedEndDate) : null
+                parseSafeISODate(item.plannedStartDate),
+                parseSafeISODate(item.plannedEndDate)
             ])
             .filter((d): d is Date => d !== null);
 
@@ -76,8 +82,8 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
     const sortedItems = useMemo(() => {
         if (sortBy === "original") return testItems;
         return [...testItems].sort((a, b) => {
-            const startA = a.plannedStartDate ? parseISO(a.plannedStartDate).getTime() : 0;
-            const startB = b.plannedStartDate ? parseISO(b.plannedStartDate).getTime() : 0;
+            const startA = parseSafeISODate(a.plannedStartDate)?.getTime() ?? 0;
+            const startB = parseSafeISODate(b.plannedStartDate)?.getTime() ?? 0;
             return startA - startB;
         });
     }, [testItems, sortBy]);
@@ -139,14 +145,17 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
     const getStatusInfo = (item: TestItem) => {
         if (item.progressStatus === "완료") return { color: "bg-emerald-500", label: "완료", shadow: "shadow-[0_0_12px_rgba(16,185,129,0.3)]" };
         if (item.plannedEndDate) {
-            const end = parseISO(item.plannedEndDate);
+            const end = parseSafeISODate(item.plannedEndDate);
+            if (!end) return { color: "bg-slate-500/50", label: "대기", shadow: "" };
             if (isAfter(today, end) && item.progressStatus !== "완료") {
                 return { color: "bg-red-500", label: "일정초과", shadow: "shadow-[0_0_12px_rgba(239,68,68,0.3)]" };
             }
         }
         if (item.plannedStartDate) {
-            const start = parseISO(item.plannedStartDate);
-            if ((isWithinInterval(today, { start, end: item.plannedEndDate ? parseISO(item.plannedEndDate) : start }) || isAfter(today, start)) &&
+            const start = parseSafeISODate(item.plannedStartDate);
+            const end = parseSafeISODate(item.plannedEndDate) ?? start;
+            if (!start || !end) return { color: "bg-slate-500/50", label: "대기", shadow: "" };
+            if ((isWithinInterval(today, { start, end }) || isAfter(today, start)) &&
                 item.progressStatus !== "진행중" && item.progressStatus !== "완료") {
                 return { color: "bg-amber-500", label: "지연", shadow: "shadow-[0_0_12px_rgba(245,158,11,0.3)]" };
             }
@@ -157,8 +166,9 @@ export function TestScheduleSection({ testItems, onItemClick, onExportExcel }: T
 
     const getBarStyle = (startDateStr: string | null, endDateStr: string | null) => {
         if (!startDateStr) return null;
-        const start = parseISO(startDateStr);
-        const end = endDateStr ? parseISO(endDateStr) : start;
+        const start = parseSafeISODate(startDateStr);
+        const end = parseSafeISODate(endDateStr) ?? start;
+        if (!start || !end) return null;
 
         const startIdx = days.findIndex(d => format(d, "yyyy-MM-dd") === format(start, "yyyy-MM-dd"));
         const endIdx = days.findIndex(d => format(d, "yyyy-MM-dd") === format(end, "yyyy-MM-dd"));
