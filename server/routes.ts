@@ -125,9 +125,15 @@ export async function registerRoutes(
         password: hashedPassword,
       });
       req.session.userId = user.id;
-      res.status(201).json({ id: user.id, username: user.username });
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+      return res.status(201).json({ id: user.id, username: user.username });
     } catch (error) {
-      res.status(500).json({ error: "회원가입에 실패했습니다" });
+      return res.status(500).json({ error: "회원가입에 실패했습니다" });
     }
   });
 
@@ -154,9 +160,15 @@ export async function registerRoutes(
         return res.status(401).json({ error: "사용자명 또는 비밀번호가 틀립니다" });
       }
       req.session.userId = user.id;
-      res.json({ id: user.id, username: user.username });
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+      return res.json({ id: user.id, username: user.username });
     } catch (error) {
-      res.status(500).json({ error: "로그인에 실패했습니다" });
+      return res.status(500).json({ error: "로그인에 실패했습니다" });
     }
   });
 
