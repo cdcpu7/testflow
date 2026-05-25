@@ -45,7 +45,8 @@ app.use(
     proxy: isProduction,
     store: new PostgresStore({
       pool,
-      createTableIfMissing: true,
+      // 번들(dist) 환경에서 table.sql 경로 이슈 방지: 스키마는 ensureDatabaseSchema()에서 직접 생성
+      createTableIfMissing: false,
     }),
     secret: process.env.SESSION_SECRET || "test-secret-key",
     resave: false,
