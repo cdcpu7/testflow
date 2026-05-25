@@ -168,6 +168,7 @@ export async function registerRoutes(
       });
       return res.json({ id: user.id, username: user.username });
     } catch (error) {
+      console.error("[auth/login]", error);
       return res.status(500).json({ error: "로그인에 실패했습니다" });
     }
   });
