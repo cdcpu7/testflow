@@ -8,6 +8,7 @@ import { createServer } from "http";
 import { ensureDatabaseSchema, pool } from "./db";
 
 const PostgresStore = connectPg(session);
+const isProduction = process.env.NODE_ENV === "production";
 
 const app = express();
 const httpServer = createServer(app);
@@ -34,8 +35,14 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+if (isProduction) {
+  app.set("trust proxy", 1);
+}
+
 app.use(
   session({
+    name: "sid",
+    proxy: isProduction,
     store: new PostgresStore({
       pool,
       createTableIfMissing: true,
@@ -44,9 +51,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: isProduction,
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   })
