@@ -117,6 +117,34 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // Auth API
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const parsed = insertUserSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0].message });
+      }
+      const existing = await storage.getUserByUsername(parsed.data.username);
+      if (existing) {
+        return res.status(400).json({ error: "이미 사용 중인 사용자명입니다" });
+      }
+      const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
+      const user = await storage.createUser({
+        username: parsed.data.username,
+        password: hashedPassword,
+      });
+      req.session.userId = user.id;
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+      return res.status(201).json({ id: user.id, username: user.username });
+    } catch (error) {
+      return res.status(500).json({ error: "회원가입에 실패했습니다" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -139,20 +167,18 @@ export async function registerRoutes(
       if (!valid) {
         return res.status(401).json({ error: "사용자명 또는 비밀번호가 틀립니다" });
       }
-      req.session.regenerate((err) => {
-        if (err) {
-          return res.status(500).json({ error: "로그인에 실패했습니다" });
-        }
-        req.session.userId = user.id;
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            return res.status(500).json({ error: "로그인에 실패했습니다" });
-          }
-          res.json({ id: user.id, username: user.username });
+
+      req.session.userId = user.id;
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) return reject(err);
+          resolve();
         });
       });
+      return res.json({ id: user.id, username: user.username });
     } catch (error) {
-      res.status(500).json({ error: "로그인에 실패했습니다" });
+      console.error("[auth/login]", error);
+      return res.status(500).json({ error: "로그인에 실패했습니다" });
     }
   });
 
@@ -165,7 +191,6 @@ export async function registerRoutes(
       res.json({ success: true });
     });
   });
-
   app.get("/api/auth/me", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: "로그인이 필요합니다" });

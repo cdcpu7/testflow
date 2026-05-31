@@ -106,6 +106,16 @@ export async function ensureDatabaseSchema(): Promise<void> {
     );
   `);
 
+  // connect-pg-simple 레거시/기존 스키마 호환
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS sid varchar;`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS sess jsonb;`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS expire timestamp;`);
+  await pool.query(`UPDATE sessions SET sess = '{}'::jsonb WHERE sess IS NULL;`);
+  await pool.query(`UPDATE sessions SET expire = now() + interval '1 day' WHERE expire IS NULL;`);
+  await pool.query(`ALTER TABLE sessions ALTER COLUMN sess SET NOT NULL;`);
+  await pool.query(`ALTER TABLE sessions ALTER COLUMN expire SET NOT NULL;`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS sessions_sid_unique_idx ON sessions (sid);`);
+
   await pool.query(`
     CREATE INDEX IF NOT EXISTS "IDX_session_expire"
     ON sessions (expire);

@@ -35,11 +35,19 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+if (isProduction) {
+  app.set("trust proxy", 1);
+}
+
 app.use(
   session({
+    name: "sid",
+    proxy: isProduction,
     store: new PostgresStore({
       pool,
-      createTableIfMissing: true,
+      tableName: "sessions",
+      // 번들(dist) 환경에서 table.sql 경로 이슈 방지: 스키마는 ensureDatabaseSchema()에서 직접 생성
+      createTableIfMissing: false,
     }),
     secret: process.env.SESSION_SECRET ?? (() => {
       if (isProduction) {
@@ -53,8 +61,7 @@ app.use(
     cookie: {
       secure: isProduction,
       httpOnly: true,
-      sameSite: "lax",
-      path: "/",
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   })
@@ -103,11 +110,14 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    if (res.headersSent) {
+      return;
+    }
+
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    return res.status(status).json({ message });
   });
 
   if (process.env.NODE_ENV === "production") {
